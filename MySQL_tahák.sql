@@ -1,124 +1,115 @@
-# MySQL Tahák - Základní i pokročilé operace
+-- =================================================================================
+-- KOMPLEXNÍ PRŮVODCE MYSQL: OD ZÁKLADŮ PO POKROČILOU LOGIKU
+-- =================================================================================
+-- Autor: [Tvé Jméno/Přezdívka]
+-- Popis: Studijní materiál pokrývající DDL, DML, Joiny, Agregace a Triggery.
 
-# Vytvoření a smazání databáze
-CREATE DATABASE `databaze_pro_web` CHARACTER SET utf8 COLLATE utf8_czech_ci;
-DROP DATABASE `databaze_pro_web`;
+-- ---------------------------------------------------------------------------------
+-- 1. NASTAVENÍ PROSTŘEDÍ
+-- ---------------------------------------------------------------------------------
+CREATE DATABASE IF NOT EXISTS `vyuka_sql` 
+CHARACTER SET utf8mb4 COLLATE utf8mb4_czech_ci;
 
-# Vytvoření a smazání tabulky
-CREATE TABLE uzivatele (
-     uzivatele_id INT NOT NULL AUTO_INCREMENT,
-     jmeno VARCHAR(60) NOT NULL,
-     prijmeni VARCHAR(60) NOT NULL,
-     datum_narozeni DATE NOT NULL,
-     pocet_clanku INT NULL DEFAULT NULL,
-     PRIMARY KEY (uzivatele_id)
-);
-DROP TABLE `uzivatele`;
+USE `vyuka_sql`;
 
-# Vkládání dat
-INSERT INTO `uzivatele` (`jmeno`, `prijmeni`, `datum_narozeni`, `pocet_clanku`)
-VALUES ('Jan', 'Novák', '1984-11-03', 17);
+-- ---------------------------------------------------------------------------------
+-- 2. TVORBA TABULEK (DDL) A REZERVACE MÍSTA
+-- ---------------------------------------------------------------------------------
+-- Tabulka uživatelů (Vazba 1:N na články)
+CREATE TABLE IF NOT EXISTS `uzivatele` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `jmeno` VARCHAR(60) NOT NULL,
+    `prijmeni` VARCHAR(60) NOT NULL,
+    `email` VARCHAR(100) UNIQUE,
+    `datum_narozeni` DATE,
+    `aktivni` BOOLEAN DEFAULT TRUE,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB;
 
-INSERT INTO `uzivatele` (`jmeno`, `prijmeni`, `datum_narozeni`, `pocet_clanku`)
-VALUES ('Tomáš', 'Marný', '1989-02-01', 6),
-       ('Josef', 'Nový', '1972-12-20', 9),
-       ('Michaela', 'Slavíková', '1990-08-14', 1);
+-- Tabulka článků
+CREATE TABLE IF NOT EXISTS `clanky` (
+    `id` INT NOT NULL AUTO_INCREMENT,
+    `autor_id` INT NOT NULL,
+    `titulek` VARCHAR(255) NOT NULL,
+    `obsah` TEXT,
+    `publikovano` DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`autor_id`) REFERENCES `uzivatele`(`id`) ON DELETE CASCADE
+) ENGINE=InnoDB;
 
-# Mazání a aktualizace dat
-DELETE FROM `uzivatele` WHERE `uzivatele_id` = 2;
+-- ---------------------------------------------------------------------------------
+-- 3. MANIPULACE S DATY (DML)
+-- ---------------------------------------------------------------------------------
+INSERT INTO `uzivatele` (`jmeno`, `prijmeni`, `email`, `datum_narozeni`) VALUES
+('Jan', 'Novák', 'jan.novak@email.cz', '1990-05-15'),
+('Petr', 'Svoboda', 'petr.s@seznam.cz', '1985-12-01'),
+('Jana', 'Marná', 'jana.m@post.cz', '1995-07-20');
 
-DELETE FROM `uzivatele`
-WHERE (`jmeno` = 'Jan' AND `datum_narozeni` >= '1980-1-1') OR (`pocet_clanku` < 3);
+INSERT INTO `clanky` (`autor_id`, `titulek`, `obsah`) VALUES
+(1, 'Úvod do MySQL', 'Obsah článku o databázích...'),
+(1, 'Pokročilé JOINy', 'Jak efektivně spojovat tabulky...'),
+(2, 'Proč používat Linux', 'Linux je skvělý operační systém...');
 
-UPDATE `uzivatele`
-SET `prijmeni` = 'Dolejší', `pocet_clanku` = `pocet_clanku` + 1
-WHERE `uzivatele_id` = 4;
+-- ---------------------------------------------------------------------------------
+-- 4. DOTAZY, FILTROVÁNÍ A ŘAZENÍ
+-- ---------------------------------------------------------------------------------
+-- Výběr s podmínkou a logickými operátory
+SELECT id, jmeno, prijmeni 
+FROM uzivatele 
+WHERE (datum_narozeni < '1995-01-01') AND aktivni = 1
+ORDER BY prijmeni ASC;
 
-TRUNCATE TABLE `uzivatele`; # Vymaže data a resetuje auto_increment
+-- Vyhledávání podle vzoru (LIKE)
+SELECT * FROM uzivatele WHERE email LIKE '%@email.cz';
 
-# Výběr dat a vyhledávání (SELECT)
-SELECT * FROM uzivatele WHERE jmeno = 'Jan';
+-- ---------------------------------------------------------------------------------
+-- 5. AGREGAČNÍ FUNKCE A SESKUPOVÁNÍ (GROUP BY)
+-- ---------------------------------------------------------------------------------
+-- Kolik článků napsal každý autor?
+SELECT u.prijmeni, COUNT(c.id) AS pocet_clanku
+FROM uzivatele u
+LEFT JOIN clanky c ON u.id = c.autor_id
+GROUP BY u.id
+HAVING pocet_clanku > 0;
 
-SELECT prijmeni, pocet_clanku FROM uzivatele WHERE jmeno = 'Jan';
+-- ---------------------------------------------------------------------------------
+-- 6. SPOJOVÁNÍ TABULEK (JOIN)
+-- ---------------------------------------------------------------------------------
+-- Vypíše titulky článků a k nim jména autorů
+SELECT c.titulek, u.jmeno, u.prijmeni
+FROM clanky c
+INNER JOIN uzivatele u ON c.autor_id = u.id;
 
-# Filtrování (WHERE, LIKE, BETWEEN)
-SELECT * FROM uzivatele WHERE datum_narozeni >= '1960-01-01' AND pocet_clanku > 5;
-SELECT * FROM uzivatele WHERE prijmeni LIKE 's%'; # Začíná na S
-SELECT prijmeni FROM uzivatele WHERE prijmeni LIKE '_o___'; # Druhé písmeno O, celkem 5 znaků
-SELECT jmeno, prijmeni, datum_narozeni FROM uzivatele WHERE datum_narozeni BETWEEN '1980-01-01' AND '1989-12-31';
+-- ---------------------------------------------------------------------------------
+-- 7. POKROČILÉ FUNKCE: POHLEDY (VIEWS)
+-- ---------------------------------------------------------------------------------
+-- Vytvoření virtuální tabulky pro snadný přístup k statistikám
+CREATE OR REPLACE VIEW `v_prehled_autoru` AS
+SELECT jmeno, prijmeni, (SELECT COUNT(*) FROM clanky WHERE autor_id = uzivatele.id) as clanku
+FROM uzivatele;
 
-# Řazení a limity
-SELECT jmeno, prijmeni FROM uzivatele ORDER BY prijmeni;
-SELECT jmeno, prijmeni, pocet_clanku FROM uzivatele ORDER BY pocet_clanku DESC, prijmeni LIMIT 10;
+-- Použití pohledu
+SELECT * FROM v_prehled_autoru WHERE clanku > 0;
 
-# Agregační funkce
-SELECT COUNT(*) FROM uzivatele WHERE pocet_clanku > 0;
-SELECT AVG(pocet_clanku) FROM uzivatele;
-SELECT SUM(pocet_clanku) FROM uzivatele WHERE datum_narozeni > '1980-01-01';
-SELECT MIN(datum_narozeni) FROM uzivatele;
-SELECT MAX(pocet_clanku) FROM uzivatele;
-
-# Seskupování (GROUP BY)
-SELECT jmeno, COUNT(*) AS pocet FROM uzivatele GROUP BY jmeno ORDER BY jmeno;
-
-# Práce s více tabulkami (JOIN)
-CREATE TABLE uzivatele_rozsirene (
-    uzivatele_id INT NOT NULL AUTO_INCREMENT,
-    prezdivka VARCHAR(155),
-    email VARCHAR(155),
-    heslo VARCHAR(255),
-    PRIMARY KEY (uzivatele_id)
-);
-
-CREATE TABLE clanky (
-    clanky_id INT AUTO_INCREMENT,
-    autor_id INT,
-    titulek VARCHAR(155),
-    obsah TEXT,
-    publikovano DATETIME,
-    PRIMARY KEY (clanky_id)
-);
-
-# INNER JOIN (pouze záznamy s protějškem)
-SELECT clanky.titulek, uzivatele_rozsirene.prezdivka
-FROM clanky
-INNER JOIN uzivatele_rozsirene ON autor_id = uzivatele_id;
-
-# LEFT JOIN (všechny články i ty bez autora)
-SELECT clanky.titulek, uzivatele_rozsirene.prezdivka
-FROM clanky
-LEFT JOIN uzivatele_rozsirene ON autor_id = uzivatele_id;
-
-# Poddotazy (Subqueries)
-SELECT c.titulek FROM clanky AS c
-WHERE c.autor_id = (SELECT u.uzivatele_id FROM uzivatele_rozsirene AS u WHERE u.prezdivka = 'David' LIMIT 1);
-
-# Změna struktury tabulky (ALTER)
-ALTER TABLE `clanky` ADD COLUMN `zhlidnuti` INT;
-ALTER TABLE `clanky` MODIFY COLUMN `zhlidnuti` BIGINT;
-ALTER TABLE `clanky` DROP COLUMN `zhlidnuti`;
-ALTER TABLE `clanky` ADD INDEX (`titulek`);
-
-# Transakce
-START TRANSACTION;
-UPDATE `ucty` SET `zustatek` = `zustatek` - 100 WHERE `id` = 1;
-UPDATE `ucty` SET `zustatek` = `zustatek` + 100 WHERE `id` = 2;
-COMMIT;
-
-# Pohledy (Views)
-CREATE VIEW `clanky_2024` AS
-SELECT titulek, publikovano FROM clanky WHERE publikovano >= '2024-01-01';
-
-# Klauzule HAVING (filtrování po seskupení)
-SELECT mesto, COUNT(*) AS pocet_zakazniku
-FROM zakaznici
-GROUP BY mesto
-HAVING pocet_zakazniku > 1;
-
-# Triggery (Spouště)
-DELIMITER $
-CREATE TRIGGER before_insert_pobocky BEFORE INSERT ON pobocky FOR EACH ROW
+-- ---------------------------------------------------------------------------------
+-- 8. AUTOMATIZACE: TRIGGERY
+-- ---------------------------------------------------------------------------------
+-- Trigger, který před vložením článku zkontroluje délku titulku
+DELIMITER //
+CREATE TRIGGER `check_title_length`
+BEFORE INSERT ON `clanky`
+FOR EACH ROW
 BEGIN
-    UPDATE statistika SET celkovy_pocet = celkovy_pocet + NEW.pocet_pracovniku;
-END$
+    IF LENGTH(NEW.titulek) < 5 THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Titulek je příliš krátký!';
+    END IF;
+END//
 DELIMITER ;
+
+-- ---------------------------------------------------------------------------------
+-- 9. ÚDRŽBA A ČIŠTĚNÍ
+-- ---------------------------------------------------------------------------------
+-- UPDATE uzivatele SET aktivni = 0 WHERE id = 3;
+-- DELETE FROM uzivatele WHERE id = 2; -- Pozor: smaže i jeho články díky ON DELETE CASCADE!
+
+-- Konec souboru
