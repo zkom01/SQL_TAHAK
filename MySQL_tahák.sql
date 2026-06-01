@@ -109,9 +109,202 @@ DELIMITER ;
 -- ---------------------------------------------------------------------------------
 -- 9. ÚDRŽBA A ČIŠTĚNÍ
 -- ---------------------------------------------------------------------------------
--- UPDATE uzivatele SET aktivni = 0 WHERE id = 3;
--- DELETE FROM uzivatele WHERE id = 2; -- Pozor: smaže i jeho články díky ON DELETE CASCADE!
+UPDATE uzivatele SET aktivni = 0 WHERE id = 3;
+DELETE FROM uzivatele WHERE id = 2; -- Pozor: smaže i jeho články díky ON DELETE CASCADE!
 
--- git
+-- ---------------------------------------------------------------------------------
+-- 10. VAZBA M:N (MANY TO MANY)
+-- ---------------------------------------------------------------------------------
+-- Jeden článek může být ve více sekcích,
+-- jedna sekce může obsahovat více článků.
 
--- Konec souboru
+CREATE TABLE IF NOT EXISTS `sekce`
+(
+    `id`    INT AUTO_INCREMENT PRIMARY KEY,
+    `nazev` VARCHAR(100) NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS `clanek_sekce`
+(
+    `clanek_id` INT,
+    `sekce_id`  INT,
+    PRIMARY KEY (`clanek_id`, `sekce_id`),
+
+    FOREIGN KEY (`clanek_id`) REFERENCES `clanky` (`id`) ON DELETE CASCADE,
+    FOREIGN KEY (`sekce_id`) REFERENCES `sekce` (`id`) ON DELETE CASCADE
+);
+
+-- Přiřazení článku do sekce
+INSERT INTO clanek_sekce (clanek_id, sekce_id)
+VALUES (1, 1);
+
+-- Výpis článků v sekci
+SELECT c.titulek, s.nazev
+FROM clanky c
+         JOIN clanek_sekce cs ON cs.clanek_id = c.id
+         JOIN sekce s ON s.id = cs.sekce_id;
+
+-- ---------------------------------------------------------------------------------
+-- 11. PODDOTAZY (SUBQUERIES)
+-- ---------------------------------------------------------------------------------
+
+-- Články autora "Jan"
+SELECT titulek
+FROM clanky
+WHERE autor_id = (SELECT id
+                  FROM uzivatele
+                  WHERE jmeno = 'Jan'
+                  LIMIT 1);
+
+-- Autor s nejvyšším počtem článků
+SELECT u.jmeno,
+       (SELECT COUNT(*)
+        FROM clanky c
+        WHERE c.autor_id = u.id) AS pocet_clanku
+FROM uzivatele u
+ORDER BY pocet_clanku DESC
+LIMIT 1;
+
+-- ---------------------------------------------------------------------------------
+-- 12. TRANSAKCE
+-- ---------------------------------------------------------------------------------
+-- Použití například při převodu peněz.
+
+START TRANSACTION;
+
+UPDATE ucty
+SET zustatek = zustatek - 1000
+WHERE id = 1;
+
+UPDATE ucty
+SET zustatek = zustatek + 1000
+WHERE id = 2;
+
+COMMIT;
+
+-- Při chybě:
+-- ROLLBACK;
+
+-- ---------------------------------------------------------------------------------
+-- 13. INDEXY A OPTIMALIZACE
+-- ---------------------------------------------------------------------------------
+
+-- Vytvoření indexu pro rychlé vyhledávání
+CREATE INDEX idx_email
+    ON uzivatele (email);
+
+-- Složený index
+CREATE INDEX idx_jmeno_prijmeni
+    ON uzivatele (jmeno, prijmeni);
+
+-- ---------------------------------------------------------------------------------
+-- 14. HAVING
+-- ---------------------------------------------------------------------------------
+-- HAVING filtruje až po GROUP BY.
+
+SELECT autor_id,
+       COUNT(*) AS pocet_clanku
+FROM clanky
+GROUP BY autor_id
+HAVING pocet_clanku >= 2;
+
+-- ---------------------------------------------------------------------------------
+-- 15. ULOŽENÉ PROCEDURY
+-- ---------------------------------------------------------------------------------
+
+DELIMITER //
+
+CREATE PROCEDURE GetClanky()
+BEGIN
+    SELECT * FROM clanky;
+END//
+
+DELIMITER ;
+
+-- Volání procedury
+CALL GetClanky();
+
+-- ---------------------------------------------------------------------------------
+-- 16. PROCEDURY S PARAMETRY
+-- ---------------------------------------------------------------------------------
+
+DELIMITER //
+
+CREATE PROCEDURE GetClankyAutora(
+    IN autor INT
+)
+BEGIN
+    SELECT *
+    FROM clanky
+    WHERE autor_id = autor;
+END//
+
+DELIMITER ;
+
+CALL GetClankyAutora(1);
+
+-- ---------------------------------------------------------------------------------
+-- 17. OUT A INOUT PARAMETRY
+-- ---------------------------------------------------------------------------------
+
+-- OUT parametr
+DELIMITER //
+
+CREATE PROCEDURE PocetClankuAutora(
+    IN autor INT,
+    OUT pocet INT
+)
+BEGIN
+    SELECT COUNT(*)
+    INTO pocet
+    FROM clanky
+    WHERE autor_id = autor;
+END//
+
+DELIMITER ;
+
+CALL PocetClankuAutora(1, @pocet);
+SELECT @pocet;
+
+-- INOUT parametr
+DELIMITER //
+
+CREATE PROCEDURE ZvysHodnotu(
+    INOUT cislo INT,
+    IN navyseni INT
+)
+BEGIN
+    SET cislo = cislo + navyseni;
+END//
+
+DELIMITER ;
+
+SET @hodnota = 10;
+
+CALL ZvysHodnotu(@hodnota, 5);
+
+SELECT @hodnota;
+
+-- ---------------------------------------------------------------------------------
+-- 18. UŽITEČNÉ PŘÍKAZY
+-- ---------------------------------------------------------------------------------
+
+SHOW TABLES;
+
+DESCRIBE uzivatele;
+
+SHOW INDEX FROM uzivatele;
+
+SHOW TRIGGERS;
+
+SHOW PROCEDURE STATUS;
+
+-- ---------------------------------------------------------------------------------
+-- 19. MAZÁNÍ OBJEKTŮ
+-- ---------------------------------------------------------------------------------
+
+DROP VIEW IF EXISTS v_prehled_autoru;
+
+DROP TRIGGER IF EXISTS check_title_length;
+
+DROP PROCEDURE IF EXISTS GetClanky;
