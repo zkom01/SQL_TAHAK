@@ -112,4 +112,6 @@ DELIMITER ;
 -- UPDATE uzivatele SET aktivni = 0 WHERE id = 3;
 -- DELETE FROM uzivatele WHERE id = 2; -- Pozor: smaže i jeho články díky ON DELETE CASCADE!
 
+-- git
+
 -- Konec souboru
