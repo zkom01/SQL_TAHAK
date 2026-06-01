@@ -34,6 +34,16 @@ SQL_TAHAK/
 | 7 | Pohledy – Views (`CREATE VIEW`) |
 | 8 | Automatizace – Triggery (`BEFORE INSERT`, `SIGNAL SQLSTATE`) |
 | 9 | Údržba a čištění (deaktivace vs. smazání záznamu, `ON DELETE CASCADE`) |
+| 10 | Vazba M:N (Many to Many) | Propojovací tabulky, složené primární klíče |
+| 11 | Poddotazy (Subqueries) | Subqueries ve `WHERE` a vnořené výpisy v `SELECT` |
+| 12 | Transakce | Bezpečné operace, `START TRANSACTION`, `COMMIT`, `ROLLBACK` |
+| 13 | Indexy a optimalizace | Zrychlení vyhledávání, `CREATE INDEX`, složené indexy |
+| 14 | HAVING | Pokročilé filtrování agregovaných dat po `GROUP BY` |
+| 15 | Uložené procedury | Deklarace procedur, změna oddělovače přes `DELIMITER`, `CALL` |
+| 16 | Procedury s parametry | Vstupní parametry, klíčové slovo `IN` |
+| 17 | Pokročilé parametry procedur | Výstupní a kombinované parametry `OUT` a `INOUT`, proměnné serveru (`@hodnota`) |
+| 18 | Užitečné inspekční příkazy | `SHOW TABLES`, `DESCRIBE`, `SHOW INDEX`, `SHOW TRIGGERS` |
+| 19 | Mazání objektů | Bezpečné odstraňování struktur přes `DROP ... IF EXISTS` |
 
 ---
 
