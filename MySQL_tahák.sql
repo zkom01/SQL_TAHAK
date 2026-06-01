@@ -95,7 +95,7 @@ SELECT * FROM v_prehled_autoru WHERE clanku > 0;
 -- 8. AUTOMATIZACE: TRIGGERY
 -- ---------------------------------------------------------------------------------
 -- Trigger, který před vložením článku zkontroluje délku titulku
-DELIMITER //
+DELIMITER  $
 CREATE TRIGGER `check_title_length`
 BEFORE INSERT ON `clanky`
 FOR EACH ROW
@@ -103,7 +103,7 @@ BEGIN
     IF LENGTH(NEW.titulek) < 5 THEN
         SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Titulek je příliš krátký!';
     END IF;
-END//
+END $
 DELIMITER ;
 
 -- ---------------------------------------------------------------------------------
@@ -212,12 +212,12 @@ HAVING pocet_clanku >= 2;
 -- 15. ULOŽENÉ PROCEDURY
 -- ---------------------------------------------------------------------------------
 
-DELIMITER //
+DELIMITER  $
 
 CREATE PROCEDURE GetClanky()
 BEGIN
     SELECT * FROM clanky;
-END//
+END $
 
 DELIMITER ;
 
@@ -228,7 +228,7 @@ CALL GetClanky();
 -- 16. PROCEDURY S PARAMETRY
 -- ---------------------------------------------------------------------------------
 
-DELIMITER //
+DELIMITER  $
 
 CREATE PROCEDURE GetClankyAutora(
     IN autor INT
@@ -237,7 +237,7 @@ BEGIN
     SELECT *
     FROM clanky
     WHERE autor_id = autor;
-END//
+END $
 
 DELIMITER ;
 
@@ -248,7 +248,7 @@ CALL GetClankyAutora(1);
 -- ---------------------------------------------------------------------------------
 
 -- OUT parametr
-DELIMITER //
+DELIMITER  $
 
 CREATE PROCEDURE PocetClankuAutora(
     IN autor INT,
@@ -259,7 +259,7 @@ BEGIN
     INTO pocet
     FROM clanky
     WHERE autor_id = autor;
-END//
+END $
 
 DELIMITER ;
 
@@ -267,7 +267,7 @@ CALL PocetClankuAutora(1, @pocet);
 SELECT @pocet;
 
 -- INOUT parametr
-DELIMITER //
+DELIMITER  $
 
 CREATE PROCEDURE ZvysHodnotu(
     INOUT cislo INT,
@@ -275,7 +275,7 @@ CREATE PROCEDURE ZvysHodnotu(
 )
 BEGIN
     SET cislo = cislo + navyseni;
-END//
+END $
 
 DELIMITER ;
 
