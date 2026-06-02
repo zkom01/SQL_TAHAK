@@ -66,10 +66,10 @@ SELECT * FROM uzivatele WHERE email LIKE '%@email.cz';
 -- 5. AGREGAČNÍ FUNKCE A SESKUPOVÁNÍ (GROUP BY)
 -- ---------------------------------------------------------------------------------
 -- Kolik článků napsal každý autor?
-SELECT u.prijmeni, COUNT(c.id) AS pocet_clanku
+SELECT u.prezdivka, COUNT(c.autor_id) AS pocet_clanku
 FROM uzivatele u
-LEFT JOIN clanky c ON u.id = c.autor_id
-GROUP BY u.id
+LEFT JOIN clanky c ON u.uzivatele_id = c.autor_id
+GROUP BY u.uzivatele_id
 HAVING pocet_clanku > 0;
 
 -- ---------------------------------------------------------------------------------
@@ -308,3 +308,4 @@ DROP VIEW IF EXISTS v_prehled_autoru;
 DROP TRIGGER IF EXISTS check_title_length;
 
 DROP PROCEDURE IF EXISTS GetClanky;
+
