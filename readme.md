@@ -1,6 +1,6 @@
 # 🗄️ MySQL / MariaDB – Přehled řešených úloh
 
-Komplexní sbírka SQL příkladů pokrývající manipulaci s daty, výběrové dotazy, spojování tabulek, poddotazy a uložené procedury. Příklady jsou rozděleny do tematických sekcí od základních po pokročilé.
+Komplexní sbírka SQL příkladů pokrývající manipulaci s daty, výběrové dotazy, spojování tabulek, poddotazy, uložené procedury a triggery. Příklady jsou rozděleny do tematických sekcí od základních po pokročilé.
 
 ---
 
@@ -26,6 +26,7 @@ Příklady pracují se třemi schématy:
 6. [Spojování tabulek (JOIN)](#6-spojování-tabulek-join)
 7. [Poddotazy (Subqueries)](#7-poddotazy-subqueries)
 8. [Uložené procedury (Procedures)](#8-uložené-procedury-procedures)
+9. [Triggery](#9-triggery)
 
 ---
 
@@ -318,10 +319,205 @@ DELIMITER ;
 
 ---
 
+## 9. Triggery
+
+Triggery se automaticky spouštějí při události `INSERT`, `UPDATE` nebo `DELETE` na dané tabulce. Používají se pro auditování změn, kaskádové mazání nebo automatické aktualizace dat.
+
+### Přehled triggerů
+
+| Trigger | Schéma | Událost | Tabulka | Popis |
+|---|---|---|---|---|
+| `after_update` | `it_web_magazine1` | AFTER UPDATE | `komentare` | Uloží původní obsah komentáře do `historie_zmen` |
+| `after_delete_uzivatel` | `insane_racing1` | AFTER DELETE | `uzivatele` | Smaže záznamy uživatele z `uzivatele_turnaje` a `uzivatele_vozidla` |
+| `insert_to_country` | `simple_money1` | AFTER INSERT | `country` | Aktualizuje `country_id` v tabulce `address` pro obec Černíny |
+| `insert_clanek_pochleb` | `it_web_magazine1` | AFTER INSERT | `clanky` | Vloží dva pochlebné komentáře ke každému novému článku autora s ID 2 |
+| `update_meny_dolar` | `insane_racing1` | AFTER INSERT | `vyhry` | Nastaví kurz všech měn obsahujících "Dollar" (kromě American Dollar) na 40 |
+| `update_item_top_10` | `simple_money1` | AFTER INSERT | `user` | Přidá "BLACK FRIDAY SALE!!!" k názvům 10 nejdražších produktů a sníží cenu o 10 % |
+| `aktivovano_300` | `insane_racing1` | AFTER INSERT | `transakce` | Aktivuje uživatele, pokud jeho celková suma transakcí překročí 300 |
+| `plati_ZUNO` | `simple_money1` | AFTER UPDATE | `bank_code` | Při přejmenování banky na výroční název nastaví cenu každého 25. produktu na 0 |
+
+---
+
+### Ukázky kódu triggerů
+
+#### `after_update` – audit změn komentářů (AFTER UPDATE)
+
+Po úpravě komentáře se původní znění automaticky zaznamená do archivní tabulky.
+
+```sql
+DELIMITER $
+CREATE TRIGGER IF NOT EXISTS after_update AFTER UPDATE
+ON it_web_magazine1.komentare FOR EACH ROW
+BEGIN
+    INSERT INTO it_web_magazine1.historie_zmen
+        (id, komentare_id, clanek_id, uzivatel_id, obsah, datum)
+    VALUES
+        (NULL, OLD.komentare_id, OLD.clanek_id, OLD.uzivatel_id, OLD.obsah, NOW());
+END $
+DELIMITER ;
+
+-- Test triggeru:
+UPDATE it_web_magazine1.komentare
+SET obsah = 'ROZUMÍM TOMU!'
+WHERE komentare_id = 7;
+```
+
+> **Klíčové:** `OLD.sloupec` obsahuje hodnoty **před** změnou, `NEW.sloupec` hodnoty **po** změně.
+
+---
+
+#### `after_delete_uzivatel` – kaskádové mazání (AFTER DELETE)
+
+Při smazání uživatele se automaticky odstraní i jeho záznamy v propojených tabulkách.
+
+```sql
+DELIMITER $
+CREATE TRIGGER IF NOT EXISTS after_delete_uzivatel AFTER DELETE
+ON insane_racing1.uzivatele FOR EACH ROW
+BEGIN
+    DELETE FROM insane_racing1.uzivatele_turnaje WHERE uzivatel_id = OLD.uzivatel_id;
+    DELETE FROM insane_racing1.uzivatele_vozidla WHERE uzivatel_id = OLD.uzivatel_id;
+END $
+DELIMITER ;
+
+-- Test triggeru:
+DELETE FROM insane_racing1.uzivatele WHERE uzivatel_id = 11;
+```
+
+---
+
+#### `insert_to_country` – podmíněná aktualizace (AFTER INSERT + IF)
+
+Trigger se spustí po každém vložení do tabulky, ale akci provede jen při splnění podmínky.
+
+```sql
+DELIMITER $
+CREATE TRIGGER IF NOT EXISTS insert_to_country AFTER INSERT
+ON simple_money1.country FOR EACH ROW
+BEGIN
+    IF NEW.title = 'JAR' THEN
+        UPDATE simple_money1.address
+        SET country_id = NEW.country_id
+        WHERE city = 'Černiny';
+    END IF;
+END $
+DELIMITER ;
+
+-- Test triggeru:
+INSERT INTO simple_money1.country VALUES (NULL, 'JAR');
+```
+
+---
+
+#### `insert_clanek_pochleb` – vložení více záznamů podmíněně (AFTER INSERT)
+
+Trigger vkládá komentáře pouze pokud článek napsal konkrétní autor (ID 2).
+
+```sql
+DELIMITER $
+CREATE TRIGGER IF NOT EXISTS insert_clanek_pochleb AFTER INSERT
+ON it_web_magazine1.clanky FOR EACH ROW
+BEGIN
+    IF NEW.autor_id = 2 THEN
+        INSERT INTO it_web_magazine1.komentare VALUES
+            (NULL, NEW.clanky_id, 1, 'Boží článek!', NOW()),
+            (NULL, NEW.clanky_id, 3, 'Kdyby jsi kandidoval na prezidenta, hned tě volím.', NOW());
+    END IF;
+END $
+DELIMITER ;
+```
+
+---
+
+#### `aktivovano_300` – výpočet agregace uvnitř triggeru (AFTER INSERT)
+
+Trigger po každé nové transakci přepočítá součet a podmíněně aktivuje uživatele.
+
+```sql
+DELIMITER $
+CREATE TRIGGER IF NOT EXISTS aktivovano_300 AFTER INSERT
+ON insane_racing1.transakce FOR EACH ROW
+BEGIN
+    UPDATE insane_racing1.uzivatele
+    SET aktivovano = (
+        IFNULL((SELECT SUM(castka)
+                FROM insane_racing1.transakce
+                WHERE uzivatel_id = NEW.uzivatel_id), 0)
+    ) >= 300
+    WHERE uzivatel_id = NEW.uzivatel_id;
+END $
+DELIMITER ;
+
+-- Test triggeru:
+INSERT INTO insane_racing1.transakce VALUES (NULL, 6, 80, 9, 80, NOW(), 'obdrzeno');
+```
+
+---
+
+#### `update_item_top_10` – hromadná UPDATE uvnitř triggeru (AFTER INSERT)
+
+Při registraci nového uživatele se spustí marketingová akce na 10 nejdražších produktů.
+
+```sql
+DELIMITER $
+CREATE TRIGGER IF NOT EXISTS update_item_top_10 AFTER INSERT
+ON simple_money1.user FOR EACH ROW
+BEGIN
+    UPDATE simple_money1.item AS i
+    SET i.title = CONCAT(i.title, ' BLACK FRIDAY SALE!!!'),
+        i.price = i.price * 0.9
+    WHERE TRUE
+    ORDER BY i.price DESC, i.product_id
+    LIMIT 10;
+END $
+DELIMITER ;
+```
+
+---
+
+#### `plati_ZUNO` – trigger na UPDATE tabulky (AFTER UPDATE)
+
+Trigger reaguje na přejmenování záznamu a provede hromadnou aktualizaci produktů.
+
+```sql
+DELIMITER $
+CREATE TRIGGER IF NOT EXISTS plati_ZUNO AFTER UPDATE
+ON simple_money1.bank_code FOR EACH ROW
+BEGIN
+    IF NEW.bank_name = 'ZUNO BANK AG - 25 anniversary' THEN
+        UPDATE simple_money1.item AS i
+        SET i.title = CONCAT(i.title, ' zaplaceno ZUNO BANK AG'),
+            i.price = 0
+        WHERE i.product_id % 25 = 0;
+    END IF;
+END $
+DELIMITER ;
+
+-- Test triggeru:
+UPDATE simple_money1.bank_code
+SET bank_name = 'ZUNO BANK AG - 25 anniversary'
+WHERE bank_name LIKE '%ZUNO BANK%';
+```
+
+---
+
+### Správa triggerů
+
+```sql
+-- Zobrazení všech triggerů v databázi
+SHOW TRIGGERS FROM it_web_magazine1;
+
+-- Smazání triggeru
+DROP TRIGGER it_web_magazine1.nazev_triggeru;
+```
+
+---
+
 ## 📌 Poznámky
 
-- Všechny procedury jsou definovány s `DELIMITER $` aby nedocházelo ke konfliktu se středníky uvnitř těla procedury.
+- Všechny procedury a triggery jsou definovány s `DELIMITER $` aby nedocházelo ke konfliktu se středníky uvnitř těla.
 - Při volání procedur s `OUT`/`INOUT` parametry je nutné předat uživatelské proměnné: `CALL procedura(1, @vysledek); SELECT @vysledek;`
+- Triggery nelze volat ručně – spouštějí se automaticky při příslušné DML operaci.
 - Příklady jsou kompatibilní s **MySQL 5.7+** a **MariaDB 10.3+**.
 
 ---
