@@ -150,3 +150,170 @@ JOIN it_web_magazine1.uzivatele ON it_web_magazine1.komentare.uzivatel_id = it_w
 WHERE (it_web_magazine1.uzivatele.prezdivka = 'david' OR it_web_magazine1.uzivatele.prezdivka = 'EMA')
   AND it_web_magazine1.komentare.clanek_id <= 2
 ORDER BY it_web_magazine1.komentare.clanek_id;
+
+-- ----------------------------------------------------------------------------------
+-- 8. ULOŽENÉ PROCEDURY (PROCEDURES)
+-- ----------------------------------------------------------------------------------
+
+-- 1) Procedura FindThief: Vyhledání autora článku podle klíčového slova v popisu
+DELIMITER $
+
+CREATE PROCEDURE it_web_magazine1.FindThief(
+    IN hledane_slovo VARCHAR(10)
+)
+BEGIN
+    SELECT u.prezdivka
+    FROM it_web_magazine1.clanky AS c
+             JOIN it_web_magazine1.uzivatele AS u ON c.autor_id = u.uzivatele_id
+    WHERE c.popis LIKE CONCAT('%', hledane_slovo, '%');
+END $
+
+DELIMITER ;
+
+
+-- 2) Procedura SelectCar: Výběr nejrychlejšího vozidla do určité hmotnosti
+DELIMITER $
+
+CREATE PROCEDURE insane_racing1.SelectCar()
+BEGIN
+    SELECT *
+    FROM insane_racing1.vozidla
+    WHERE hmotnost < 3000
+    ORDER BY max_rychlost DESC
+    LIMIT 1;
+END $
+
+DELIMITER ;
+
+-- 3) Procedura ToJeBordel: Vyhledání nejlevnějšího produktu podle názvu
+DELIMITER $
+
+CREATE PROCEDURE simple_money1.ToJeBordel(
+    IN priblizny_nazev_produktu VARCHAR(60)
+)
+BEGIN
+    SELECT * FROM simple_money1.item
+    WHERE title LIKE CONCAT('%', priblizny_nazev_produktu, '%')
+    ORDER BY price ASC
+    LIMIT 1;
+END $
+
+DELIMITER ;
+
+-- 4) Procedura Zlodej: Kompletní informace o uživateli a jeho článku s klíčovým slovem
+DELIMITER $
+
+CREATE PROCEDURE it_web_magazine1.Zlodej(
+    IN jmeno VARCHAR(60)
+)
+BEGIN
+    SELECT c.*, u.*
+    FROM it_web_magazine1.uzivatele AS u
+             JOIN it_web_magazine1.clanky AS c ON u.uzivatele_id = c.autor_id
+    WHERE u.prezdivka = jmeno AND c.popis LIKE '%mouse%';
+END $
+
+DELIMITER ;
+
+-- 5) Procedura BohatyAVykutaleny: Výpočet sumy obdržených transakcí uživatele (INOUT parametr)
+DELIMITER $
+
+CREATE PROCEDURE insane_racing1.BohatyAVykutaleny(
+    IN id_uzivatele INT,
+    INOUT jiz_spoctena_suma INT
+)
+BEGIN
+    SET jiz_spoctena_suma = (
+        SELECT SUM(castka)
+        FROM insane_racing1.transakce
+        WHERE uzivatel_id = id_uzivatele AND stav = 'obdrzeno'
+    );
+END $
+
+DELIMITER ;
+
+-- 6) Procedura VrabecVHrsti: Načtení detailů adresy uživatele do OUT proměnných
+DELIMITER $
+
+CREATE PROCEDURE simple_money1.VrabecVHrsti(
+    IN id_uzivatele INT,
+    OUT adresa_cislo INT,
+    OUT ulice VARCHAR(60),
+    OUT registrace_cislo INT,
+    OUT dum_cislo INT,
+    OUT mesto VARCHAR(60),
+    OUT psc INT
+)
+BEGIN
+    SELECT a.address_id, a.street, a.registry_number, a.house_number, a.city, a.zip
+    INTO adresa_cislo, ulice, registrace_cislo, dum_cislo, mesto, psc
+    FROM simple_money1.person AS p
+             JOIN simple_money1.address AS a ON p.address_id = a.address_id
+    WHERE p.person_id = id_uzivatele;
+END $
+
+DELIMITER ;
+
+-- 7) Procedura ZmetourJeden: Podmíněné větvení IF-ELSE na základě přezdívky uživatele
+DELIMITER $
+
+CREATE PROCEDURE it_web_magazine1.ZmetourJeden(
+    IN p_id_uzivatele INT,
+    OUT jaky_je VARCHAR(30)
+)
+BEGIN
+    DECLARE v_nik VARCHAR(60);
+
+    SELECT prezdivka INTO v_nik
+    FROM it_web_magazine1.uzivatele
+    WHERE uzivatele_id = p_id_uzivatele;
+
+    IF v_nik = 'denny' THEN
+        SET jaky_je = 'ZMETEK';
+    ELSE
+        SET jaky_je = 'NEVINNÝ ČLOVÍČEK';
+    END IF;
+END $
+
+DELIMITER ;
+
+-- 8) Procedura JsiNahranyChlapce: Vynulování částek transakcí a vrácení nového součtu
+DELIMITER $
+
+CREATE PROCEDURE insane_racing1.JsiNahranyChlapce(
+    IN id_uzivatele INT,
+    OUT prasulky INT
+)
+BEGIN
+    UPDATE insane_racing1.transakce
+    SET castka = 0
+    WHERE uzivatel_id = id_uzivatele AND stav = 'obdrzeno';
+
+    SET prasulky = (
+        SELECT SUM(castka)
+        FROM insane_racing1.transakce
+        WHERE uzivatel_id = id_uzivatele AND stav = 'obdrzeno'
+    );
+END $
+
+DELIMITER ;
+
+-- 9) Procedura vyberProdukt: Vyhledání nejdražšího produktu v cenovém rozmezí
+DELIMITER $
+
+CREATE PROCEDURE simple_money1.vyberProdukt(
+    IN hledany_produkt VARCHAR(60),
+    IN cena_min INT,
+    IN cena_max INT,
+    OUT produkt VARCHAR(160),
+    OUT cena INT
+)
+BEGIN
+    SELECT title, price INTO produkt, cena
+    FROM simple_money1.item
+    WHERE title LIKE CONCAT('%', hledany_produkt, '%')
+      AND price BETWEEN cena_min AND cena_max
+    ORDER BY price DESC
+    LIMIT 1;
+END $
+DELIMITER ;
