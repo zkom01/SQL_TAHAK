@@ -7,7 +7,7 @@ Komplexní přehled syntaxe, datových typů, operací a pokročilých funkcí v
 1. [Databáze – vytvoření, smazání](#1-databáze)
 2. [Tabulky – vytvoření, smazání, přehled datových typů](#2-tabulky)
 3. [Modifikátory sloupců (NOT NULL, AUTO_INCREMENT…)](#3-modifikátory-sloupců)
-4. [INSERT – vkládání dat](#4-insert-vkládání-dat)
+4. [INSERT – vkládání dat](#4-INSERT-vkládání-dat)
 5. [UPDATE – aktualizace dat](#5-update-aktualizace-dat)
 6. [DELETE / TRUNCATE – mazání dat](#6-delete-a-truncate-mazání-dat)
 7. [SELECT – výběr dat, podmínky WHERE](#7-select-výběr-dat-a-podmínky-where)
