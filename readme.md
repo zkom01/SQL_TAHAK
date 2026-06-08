@@ -1,525 +1,843 @@
-# 🗄️ MySQL / MariaDB – Přehled řešených úloh
+# 📊 MySQL Tahák & Učební pomůcka
 
-Komplexní sbírka SQL příkladů pokrývající manipulaci s daty, výběrové dotazy, spojování tabulek, poddotazy, uložené procedury a triggery. Příklady jsou rozděleny do tematických sekcí od základních po pokročilé.
+Komplexní přehled syntaxe, datových typů, operací a pokročilých funkcí v MySQL. Tento dokument slouží jako rychlá referenční příručka (Cheat Sheet) pro každodenní práci s databázemi.
+
+## 📌 Obsah
+
+1. [Databáze – vytvoření, smazání](#1-databáze)
+2. [Tabulky – vytvoření, smazání, přehled datových typů](#2-tabulky)
+3. [Modifikátory sloupců (NOT NULL, AUTO_INCREMENT…)](#3-modifikátory-sloupců)
+4. [INSERT – vkládání dat](#4-insert-–-vkládání-dat)
+5. [UPDATE – aktualizace dat](#5-update-–-aktualizace-dat)
+6. [DELETE / TRUNCATE – mazání dat](#6-delete-a-truncate-–-mazání-dat)
+7. [SELECT – výběr dat, podmínky WHERE](#7-select-–-výběr-dat-a-podmínky-where)
+8. [Operátory LIKE, BETWEEN, IN](#8-like-between-in)
+9. [ORDER BY, LIMIT](#9-order-by-a-limit)
+10. [Agregační funkce (COUNT, SUM, AVG, MIN, MAX)](#10-agregační-funkce)
+11. [GROUP BY + HAVING](#11-group-by--having)
+12. [JOIN (INNER, LEFT, RIGHT)](#12-join-–-dotazy-přes-více-tabulek)
+13. [Aliasy tabulek a sloupců](#13-aliasy)
+14. [Poddotazy (subqueries)](#14-poddotazy-subqueries)
+15. [ALTER TABLE – změna struktury](#15-alter-table-–-změna-struktury-tabulky)
+16. [Transakce (START TRANSACTION, COMMIT, ROLLBACK)](#16-transakce)
+17. [Pohledy (VIEW)](#17-pohledy-view)
+18. [Indexy a optimalizace](#18-indexy-a-optimalizace)
+19. [Fulltext vyhledávání](#19-fulltextové-vyhledávání)
+20. [Triggery](#20-triggery)
+21. [Uložené procedury a funkce](#21-uložené-procedury-a-funkce)
+22. [Cizí klíče (FOREIGN KEY)](#22-cizí-klíče-foreign-key)
+23. [Uživatelé a oprávnění](#23-uživatelé-a-oprávnění)
+24. [Rychlý přehled příkazů (Cheat Sheet)](#-rychlý-přehled-příkazů-–-cheat-sheet)
 
 ---
 
-## 📁 Struktura databází
-
-Příklady pracují se třemi schématy:
-
-| Schéma | Popis |
-|---|---|
-| `it_web_magazine1` | Webový magazín – uživatelé, články, komentáře |
-| `insane_racing1` | Závodní simulátor – vozidla, turnaje, transakce, výhry |
-| `simple_money1` | Jednoduchý finanční systém – adresy, uživatelé, produkty, bankovní účty |
-
----
-
-## 📋 Obsah
-
-1. [Manipulace s daty – základní](#1-manipulace-s-daty--základní)
-2. [Manipulace s daty – pokročilá](#2-manipulace-s-daty--pokročilá)
-3. [Manipulace s daty – bonus](#3-manipulace-s-daty--bonus)
-4. [Výběr dat (SELECT)](#4-výběr-dat-select)
-5. [Řazení, agregace a seskupování](#5-řazení-agregace-a-seskupování)
-6. [Spojování tabulek (JOIN)](#6-spojování-tabulek-join)
-7. [Poddotazy (Subqueries)](#7-poddotazy-subqueries)
-8. [Uložené procedury (Procedures)](#8-uložené-procedury-procedures)
-9. [Triggery](#9-triggery)
-
----
-
-## 1. Manipulace s daty – základní
-
-Základní příkazy `INSERT`, `UPDATE` a `DELETE` pro jednotlivé záznamy.
+## 1. Databáze
 
 ```sql
--- Odstranění uživatele podle emailu
-DELETE FROM it_web_magazine1.uzivatele 
-WHERE email = 'ema@centrum.cz';
+-- Vytvoření databáze (utf8 + české řazení)
+CREATE DATABASE `moje_db` CHARACTER SET utf8 COLLATE utf8_czech_ci;
 
--- Přidání měny Bitcoin s kurzem k USD
-INSERT INTO insane_racing1.meny (nazev, zkratka, kurz_vuci_USD)
-VALUES ('Bitcoin', 'BTC', '0.00008');
-
--- Aktualizace názvu obce v tabulce address
-UPDATE simple_money1.address
-SET city = 'Mikulow'
-WHERE city = 'Mikulovice';
+-- Smazání databáze
+DROP DATABASE `moje_db`;
 ```
 
 ---
 
-## 2. Manipulace s daty – pokročilá
-
-Hromadné operace a podmíněné aktualizace více záznamů najednou.
+## 2. Tabulky
 
 ```sql
--- Hromadné vložení více uživatelů jedním příkazem
-INSERT INTO it_web_magazine1.uzivatele (prezdivka, email, heslo)
-VALUES 
-    ('Antonín Nevrlý', 'antonevrly@email.cz', '5ly_poas7#gf'),
-    ('Marek Horák',    'iloveanime@gmail.com', '6SA4Ap_s32$f');
-
--- Omezení maximální rychlosti všech vozidel nad limit
-UPDATE insane_racing1.vozidla
-SET max_rychlost = 320
-WHERE max_rychlost > 320;
-
--- Odstranění konkrétních adres podle ulice a čísla popisného
-DELETE FROM simple_money1.address
-WHERE street = 'Hladná' AND (house_number = 13 OR house_number = 28);
-```
-
----
-
-## 3. Manipulace s daty – bonus
-
-Pokročilejší příklady kombinující podmínky a aritmetické výrazy.
-
-```sql
--- Označení starých článků jako zastaralé
-UPDATE it_web_magazine1.clanky
-SET popis = 'Zastaralý'
-WHERE publikovano <= '2005-01-01';
-
--- Odstranění vozidel s nízkým hodnocením
-DELETE FROM insane_racing1.vozidla 
-WHERE nazev = 'Moped' AND hodnoceni <= 30;
-
--- Zvýšení ceny produktu o fixní částku
-UPDATE simple_money1.item
-SET price = price + 100
-WHERE product_id = 29;
-```
-
----
-
-## 4. Výběr dat (SELECT)
-
-Filtrování záznamů pomocí `WHERE`, `LIKE`, `IN` a dalších operátorů.
-
-```sql
--- Vyhledání uživatele podle přezdívky
-SELECT * FROM it_web_magazine1.uzivatele WHERE prezdivka = 'Denny';
-
--- Vyhledání turnajů podle vzoru názvu
-SELECT nazev, start FROM insane_racing1.turnaje 
-WHERE nazev LIKE '%Grand%Prix%';
-
--- Filtrování pomocí IN
-SELECT * FROM it_web_magazine1.uzivatele WHERE uzivatele_id IN (2, 3, 4);
-SELECT nazev FROM insane_racing1.vozidla WHERE nazev IN ('Sáně', 'Moped', 'Pickup');
-
--- Vyhledávání podle délky a pozice znaků (wildcard maska)
-SELECT name FROM simple_money1.user WHERE name LIKE '___o___';
-```
-
-> **Tip:** Maska `___o___` odpovídá přesně sedmiznakovým hodnotám, kde čtvrtý znak je `o`.
-
----
-
-## 5. Řazení, agregace a seskupování
-
-Použití `ORDER BY`, `GROUP BY`, `COUNT`, `AVG` a aliasů.
-
-```sql
--- Seřazení uživatelů abecedně
-SELECT prezdivka, email FROM it_web_magazine1.uzivatele ORDER BY prezdivka;
-
--- Výpočet průměrného zrychlení vozidel
-SELECT AVG(zrychleni) AS prumerne_zrychleni FROM insane_racing1.vozidla;
-
--- Počet produktů obsahujících barvu v názvu
-SELECT COUNT(*) AS pocet_zlutych_produktu 
-FROM simple_money1.item
-WHERE title LIKE '%žlutá%' OR title LIKE '%yellow%';
-
--- Počet komentářů na uživatele (seskupení)
-SELECT uzivatel_id, COUNT(*) AS pocet_komentaru
-FROM it_web_magazine1.komentare
-GROUP BY uzivatel_id
-ORDER BY uzivatel_id;
-```
-
----
-
-## 6. Spojování tabulek (JOIN)
-
-Příklady `INNER JOIN` a `RIGHT JOIN` pro propojení více tabulek.
-
-```sql
--- INNER JOIN: Komentáře s přezdívkami jejich autorů
-SELECT k.obsah, u.prezdivka
-FROM it_web_magazine1.komentare AS k
-JOIN it_web_magazine1.uzivatele AS u ON k.uzivatel_id = u.uzivatele_id;
-
--- RIGHT JOIN: Všechna vozidla včetně těch bez výhry
-SELECT v.vyhra_id, voz.nazev, v.poznamka
-FROM insane_racing1.vyhry AS v
-RIGHT JOIN insane_racing1.vozidla AS voz ON voz.vozidlo_id = v.vozidla_id;
-
--- JOIN s filtrováním: Články od roku 2010 s klíčovým slovem "hra"
-SELECT c.publikovano, c.titulek, u.prezdivka
-FROM it_web_magazine1.clanky AS c
-JOIN it_web_magazine1.uzivatele AS u ON c.autor_id = u.uzivatele_id
-WHERE c.publikovano >= '2010-01-01'
-  AND c.klicova_slova LIKE '%hra%';
-```
-
----
-
-## 7. Poddotazy (Subqueries)
-
-Vnořené dotazy pro komplexní filtrování a kontrolu konzistence dat.
-
-```sql
--- Výběr článků konkrétního autora pomocí poddotazu
-SELECT c.titulek
-FROM it_web_magazine1.clanky AS c
-WHERE c.autor_id IN (
-    SELECT u.uzivatele_id
-    FROM it_web_magazine1.uzivatele AS u
-    WHERE u.prezdivka = 'DENNY'
+-- Vytvoření tabulky
+CREATE TABLE `uzivatele`
+(
+    uzivatele_id   INT          NOT NULL AUTO_INCREMENT,
+    jmeno          VARCHAR(60)  NOT NULL,
+    prijmeni       VARCHAR(60)  NOT NULL,
+    datum_narozeni DATE         NOT NULL,
+    pocet_clanku   INT          NULL DEFAULT NULL,
+    PRIMARY KEY (uzivatele_id)
 );
 
--- Kontrola konzistence: Bankovní účty s neexistujícím kódem banky
+-- Vytvoření tabulky jen pokud NEEXISTUJE (bezpečnější)
+CREATE TABLE IF NOT EXISTS `logy`
+(
+    log_id  INT  NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    zprava  TEXT NOT NULL
+);
+
+-- Smazání tabulky
+DROP TABLE `uzivatele`;
+```
+
+### 📋 Přehled datových typů
+
+| Kategorie | Typ | Rozsah / Popis |
+| :--- | :--- | :--- |
+| **ČÍSLA** | `TINYINT` | -128 … 127 (nebo 0 … 255 `UNSIGNED`) |
+| | `SMALLINT` | -32 768 … 32 767 |
+| | `MEDIUMINT` | Střední celá čísla |
+| | `INT` | -2 147 483 648 … 2 147 483 647 |
+| | `BIGINT` | Velká celá čísla |
+| | `FLOAT` / `DOUBLE` / `DECIMAL(m,d)` | Desetinná čísla |
+| **TEXT** | `CHAR(n)` | Pevná délka, max. 255 znaků |
+| | `VARCHAR(n)` | Proměnná délka, max. 65 535 B |
+| | `TINYTEXT` | Max. 255 B |
+| | `TEXT` | Max. 64 KB |
+| | `MEDIUMTEXT` | Max. 16 MB |
+| | `LONGTEXT` | Max. 4 GB |
+| **DATUM A ČAS** | `DATE` | `'RRRR-MM-DD'` |
+| | `TIME` | `'HH:MM:SS'` |
+| | `DATETIME` | `'RRRR-MM-DD HH:MM:SS'` |
+| | `TIMESTAMP` | Jako DATETIME, ale do roku 2038 – *raději nepoužívat* |
+| **OSTATNÍ** | `BLOB` | Binární data (obrázky apod.) |
+| | `BOOLEAN` | Alias pro `TINYINT(1)`; 0 = FALSE, 1 = TRUE |
+
+---
+
+## 3. Modifikátory sloupců
+
+* **`NOT NULL`** – hodnota nesmí být NULL.
+* **`NULL`** – hodnota může být NULL (výchozí chování).
+* **`DEFAULT hodnota`** – výchozí hodnota při vložení bez uvedení sloupce.
+* **`AUTO_INCREMENT`** – automaticky zvyšující se číslo (pouze pro `INT`/`BIGINT`).
+* **`UNIQUE`** – hodnoty musí být v celém sloupci unikátní.
+* **`PRIMARY KEY`** – primární klíč (automaticky definuje `UNIQUE` + `NOT NULL`).
+
+---
+
+## 4. INSERT – vkládání dat
+
+```sql
+-- Vložení jednoho záznamu
+INSERT INTO `uzivatele` (`jmeno`, `prijmeni`, `datum_narozeni`, `pocet_clanku`)
+VALUE ('Jan', 'Novák', '1984-11-03', 17);
+
+-- Vložení více záznamů najonou (výkonnější než opakovaný INSERT)
+INSERT INTO `uzivatele` (`jmeno`, `prijmeni`, `datum_narozeni`, `pocet_clanku`)
+VALUES ('Tomáš', 'Marný',     '1989-02-01', 6),
+       ('Josef', 'Nový',      '1972-12-20', 9),
+       ('Michaela', 'Slavíková', '1990-08-14', 1);
+```
+
+---
+
+## 5. UPDATE – aktualizace dat
+
+> ⚠️ **POZOR:** VŽDY uváděj podmínku **`WHERE`**, jinak se změní **VŠECHNY** řádky v tabulce!
+
+```sql
+-- Aktualizace konkrétního záznamu
+UPDATE `uzivatele`
+SET `prijmeni`     = 'Dolejší',
+    `pocet_clanku` = `pocet_clanku` + 1   -- aritmetika v SET je v pořádku
+WHERE `uzivatele_id` = 4;
+
+-- Aktualizace více řádků najednou (podmínka vrátí více záznamů)
+UPDATE `vozidla`
+SET `max_rychlost` = 320
+WHERE `max_rychlost` > 320;
+```
+
+---
+
+## 6. DELETE a TRUNCATE – mazání dat
+
+```sql
+-- Smazání konkrétního záznamu
+DELETE FROM `uzivatele`
+WHERE `uzivatele_id` = 2;
+
+-- Smazání více záznamů podle podmínky
+DELETE FROM `uzivatele`
+WHERE (`jmeno` = 'Jan' AND `datum_narozeni` >= '1980-01-01')
+   OR (`pocet_clanku` < 3);
+
+-- TRUNCATE: smaže VŠECHNA data a resetuje AUTO_INCREMENT
+-- (Rychlejší než DELETE bez WHERE, ale nelze vrátit transakcí!)
+TRUNCATE TABLE `uzivatele`;
+```
+
+---
+
+## 7. SELECT – výběr dat a podmínky WHERE
+
+```sql
+-- Výběr všech sloupců
+SELECT * FROM `uzivatele`;
+
+-- Výběr konkrétních sloupců
+SELECT `jmeno`, `prijmeni` FROM `uzivatele`;
+
+-- Podmínka – rovnost
+SELECT * FROM `uzivatele`
+WHERE `jmeno` = 'Jan';
+
+-- Podmínka – porovnání + logický AND
+SELECT * FROM `uzivatele`
+WHERE `datum_narozeni` >= '1960-01-01'
+  AND `pocet_clanku` > 5;
+
+-- Podmínka – logický OR
+SELECT * FROM `uzivatele`
+WHERE `jmeno` = 'Jan'
+   OR `jmeno` = 'Eva';
+
+-- NULL hodnoty (vždy porovnávat pomocí IS / IS NOT)
+SELECT * FROM `uzivatele` WHERE `pocet_clanku` IS NULL;
+SELECT * FROM `uzivatele` WHERE `pocet_clanku` IS NOT NULL;
+```
+
+---
+
+## 8. LIKE, BETWEEN, IN
+
+```sql
+-- LIKE – vzorové hledání (% = libovolný počet znaků, _ = přesně jeden znak)
+SELECT * FROM `uzivatele` WHERE `prijmeni` LIKE 's%';       -- začíná na S
+SELECT * FROM `uzivatele` WHERE `prijmeni` LIKE '_o___';    -- 5 znaků, 2. písmeno o
+SELECT * FROM `uzivatele` WHERE `prijmeni` LIKE '%ová%';    -- obsahuje "ová"
+
+-- BETWEEN – rozsah (včetně krajních hodnot)
+SELECT * FROM `uzivatele`
+WHERE `datum_narozeni` BETWEEN '1980-01-01' AND '1989-12-31';
+
+-- IN – výčet hodnot (efektivní alternativa k několika OR)
+SELECT * FROM `uzivatele`
+WHERE `uzivatele_id` IN (2, 3, 4);
+
+SELECT * FROM `vozidla`
+WHERE `nazev` IN ('Sáně', 'Moped', 'Pickup');
+
+-- NOT IN – vše MIMO definovaný výčet
+SELECT * FROM `bank_account`
+WHERE `bank_code` NOT IN (SELECT `bank_code` FROM `bank_code`);
+```
+
+---
+
+## 9. ORDER BY a LIMIT
+
+```sql
+-- Řazení vzestupně (ASC = výchozí, netřeba uvádět)
+SELECT `jmeno`, `prijmeni` FROM `uzivatele`
+ORDER BY `prijmeni`;
+
+-- Řazení sestupně
+SELECT `jmeno`, `prijmeni`, `pocet_clanku` FROM `uzivatele`
+ORDER BY `pocet_clanku` DESC;
+
+-- Řazení podle více sloupců
+SELECT `jmeno`, `prijmeni`, `pocet_clanku` FROM `uzivatele`
+ORDER BY `pocet_clanku` DESC, `prijmeni` ASC;
+
+-- LIMIT – omezení počtu výsledků
+SELECT `jmeno`, `prijmeni` FROM `uzivatele`
+ORDER BY `pocet_clanku` DESC
+LIMIT 10;
+
+-- LIMIT s OFFSET (přeskočí prvních N záznamů – ideální pro stránkování)
+SELECT * FROM `uzivatele`
+LIMIT 10 OFFSET 20;   -- vrátí záznamy 21–30
+```
+
+---
+
+## 10. Agregační funkce
+
+```sql
+-- COUNT – počet řádků splňujících podmínku
+SELECT COUNT(*) FROM `uzivatele` WHERE `pocet_clanku` > 0;
+
+-- SUM – součet hodnot
+SELECT SUM(`pocet_clanku`) FROM `uzivatele`
+WHERE `datum_narozeni` > '1980-01-01';
+
+-- AVG – průměrná hodnota
+SELECT AVG(`pocet_clanku`) FROM `uzivatele`;
+
+-- MIN / MAX – minimální a maximální hodnota
+SELECT MIN(`datum_narozeni`) FROM `uzivatele`;
+SELECT MAX(`pocet_clanku`)   FROM `uzivatele`;
+```
+
+> ⚠️ **POZOR:** Výběr `MIN`/`MAX` společně s dalšími nesouvisejícími sloupci (např. jméno) bez seskupení nevrátí správný řádek!
+>
+> ❌ **Špatně:** `SELECT jmeno, MIN(datum_narozeni) FROM uzivatele;`  
+> ✔️ **Správně (pomocí ORDER BY + LIMIT 1):**
+> ```sql
+> SELECT `jmeno`, `prijmeni`, `datum_narozeni` FROM `uzivatele`
+> ORDER BY `datum_narozeni`
+> LIMIT 1;
+> ```
+
+---
+
+## 11. GROUP BY + HAVING
+
+### ⏳ Pořadí klauzulí v SQL dotazu:
+`SELECT` … `FROM` … `WHERE` … `GROUP BY` … `HAVING` … `ORDER BY` … `LIMIT` …
+
+* **`WHERE`** filtruje řádky **PŘED** seskupením.
+* **`HAVING`** filtruje skupiny **PO** seskupení (používá se pro agregační výsledky).
+
+```sql
+-- GROUP BY – seskupení řádků
+SELECT `jmeno`, COUNT(*) AS `pocet`
+FROM `uzivatele`
+GROUP BY `jmeno`
+ORDER BY `jmeno`;
+
+-- HAVING – filtrování skupin
+SELECT `id_objednavky`,
+       SUM(`pocet_kusu`)                  AS `kusy`,
+       SUM(`pocet_kusu` * `cena_za_kus`)  AS `cena_celkem`
+FROM `detail_objednavky`
+GROUP BY `id_objednavky`
+HAVING `cena_celkem` > 100
+   AND `kusy` > 10;
+
+-- Kombinace WHERE (filtr řádků) + GROUP BY + HAVING (filtr skupin)
+SELECT `mesto`, COUNT(*) AS `pocet_zakazniku`
+FROM `zakaznik`
+WHERE `vek` > 17                    -- filtruje PŘED seskupením
+GROUP BY `mesto`
+HAVING `pocet_zakazniku` > 1;       -- filtruje PO seskupením
+```
+
+---
+
+## 12. JOIN – dotazy přes více tabulek
+
+**Schéma příkladu:** `clanky.autor_id` ↔ `uzivatele.uzivatele_id`
+
+```sql
+-- INNER JOIN – průnik (pouze záznamy, které mají shodu v obou tabulkách)
+SELECT `c`.`titulek`, `u`.`prezdivka`
+FROM `clanky` AS `c`
+    INNER JOIN `uzivatele` AS `u` ON `c`.`autor_id` = `u`.`uzivatele_id`
+ORDER BY `u`.`prezdivka`;
+
+-- LEFT JOIN – všechny záznamy z LEVÉ tabulky + odpovídající z pravé (chybějící = NULL)
+SELECT `c`.`titulek`, `u`.`prezdivka`
+FROM `clanky` AS `c`
+    LEFT JOIN `uzivatele` AS `u` ON `c`.`autor_id` = `u`.`uzivatele_id`;
+-- -> zobrazí i články bez existujícího autora (prezdivka bude NULL)
+
+-- RIGHT JOIN – všechny záznamy z PRAVÉ tabulky + odpovídající z levé (chybějící = NULL)
+SELECT `c`.`titulek`, `u`.`prezdivka`
+FROM `clanky` AS `c`
+    RIGHT JOIN `uzivatele` AS `u` ON `c`.`autor_id` = `u`.`uzivatele_id`;
+-- -> zobrazí i uživatele, kteří nenapsali žádný článek (titulek bude NULL)
+```
+
+> ⚠️ **POZOR:** Nikdy nepropojuj tabulky starým způsobem přes `WHERE` (tzv. "WHERE-ování"). Je to nečitelné a neefektivní!
+>
+> ❌ **Špatně:** `SELECT ... FROM clanky, uzivatele WHERE autor_id = uzivatele_id;`  
+> ✔️ **Správně:** `SELECT ... FROM clanky JOIN uzivatele ON ...;`
+
+```sql
+-- JOIN přes 3 tabulky (komentáře + uživatelé + články)
+SELECT `u`.`prezdivka`, `k`.`obsah`, `c`.`titulek`
+FROM `komentare` AS `k`
+    JOIN `uzivatele` AS `u` ON `u`.`uzivatele_id` = `k`.`uzivatel_id`
+    JOIN `clanky`    AS `c` ON `c`.`clanky_id`    = `k`.`clanek_id`
+ORDER BY `k`.`datum`;
+```
+
+---
+
+## 13. Aliasy
+
+```sql
+-- Alias sloupce (klíčové slovo AS je nepovinné, ale doporučené pro čitelnost)
+SELECT COUNT(*) AS `pocet_uzivatelu` FROM `uzivatele`;
+
+-- Alias tabulky (výrazně zkracuje a zpřehledňuje zápis v JOIN dotech)
+SELECT `u`.`prezdivka`, `c`.`titulek`
+FROM `uzivatele` AS `u`
+    JOIN `clanky` AS `c` ON `c`.`autor_id` = `u`.`uzivatele_id`;
+```
+
+---
+
+## 14. Poddotazy (Subqueries)
+
+```sql
+-- Poddotaz ve WHERE – očekává a vrací právě jednu hodnotu
+SELECT `c`.`titulek`
+FROM `clanky` AS `c`
+WHERE `c`.`autor_id` = (
+    SELECT `u`.`uzivatele_id`
+    FROM `uzivatele` AS `u`
+    WHERE `u`.`prezdivka` = 'David'
+    LIMIT 1
+);
+
+-- Poddotaz s IN – vrací více hodnot (množinu)
+SELECT `c`.`titulek`
+FROM `clanky` AS `c`
+WHERE `c`.`autor_id` IN (
+    SELECT `u`.`uzivatele_id`
+    FROM `uzivatele` AS `u`
+    WHERE `u`.`prezdivka` = 'David'
+);
+
+-- Korelovaný poddotaz v SELECT (spustí se pro každý řádek hlavního dotazu)
+SELECT `u`.`prezdivka`,
+       (SELECT COUNT(*)
+        FROM `clanky` AS `c`
+        WHERE `c`.`autor_id` = `u`.`uzivatele_id`) AS `pocet_clanku`
+FROM `uzivatele` AS `u`
+ORDER BY `pocet_clanku` DESC;
+
+-- NOT EXISTS – vybere záznamy, pro které poddotaz nevrátí žádný výsledek
+SELECT `u`.`prezdivka`
+FROM `uzivatele` AS `u`
+WHERE NOT EXISTS (
+    SELECT * FROM `clanky` AS `c`
+    WHERE `c`.`autor_id` = `u`.`uzivatele_id`
+);
+
+-- ALL – porovnání se VŠEMI hodnotami vrácenými poddotazem
+SELECT `k`.`obsah`, `k`.`datum`
+FROM `komentare` AS `k`
+WHERE `k`.`datum` > ALL (
+    SELECT `k2`.`datum`
+    FROM `komentare` AS `k2`
+        JOIN `uzivatele` AS `u` ON `u`.`uzivatele_id` = `k2`.`uzivatel_id`
+    WHERE `u`.`prezdivka` = 'Denny'
+);
+
+-- ANY – porovnání s ALESPOŇ JEDNOU libovolnou hodnotou poddotazu
+SELECT `c`.`titulek`
+FROM `clanky` AS `c`
+WHERE `c`.`publikovano` < ANY (
+    SELECT `c2`.`publikovano`
+    FROM `clanky` AS `c2`
+    WHERE `c2`.`autor_id` = 2
+);
+
+-- CTE (Common Table Expression) / klauzule WITH – čitelnější alternativa ke složitým poddotazům
+WITH faktury_srpen AS (
+    SELECT `ii`.`item_id`, `it`.`title`, `it`.`price`
+    FROM `item_invoice` AS `ii`
+        JOIN `item` AS `it` ON `ii`.`item_id` = `it`.`product_id`
+        JOIN `invoice` AS `i` ON `ii`.`invoice_id` = `i`.`invoice_id`
+    WHERE `i`.`created` >= '2015-08-01'
+      AND `i`.`created`  < '2015-09-01'
+)
+SELECT `item_id`, `title`, `price` FROM `faktury_srpen`
+UNION ALL -- Vertikální spojení tabulek (musí mít identický počet a typ sloupců)
+SELECT NULL, 'SOUČET', SUM(`price`) FROM `faktury_srpen`;
+```
+
+---
+
+## 15. ALTER TABLE – změna struktury tabulky
+
+```sql
+-- Přidání nového sloupce
+ALTER TABLE `komentare`
+    ADD COLUMN `palce` INT;
+
+-- Změna datového typu existujícího sloupce
+ALTER TABLE `komentare`
+    MODIFY COLUMN `palce` BIGINT;
+
+-- Smazání sloupce
+ALTER TABLE `komentare`
+    DROP COLUMN `palce`;
+
+-- Resetování / nastavení výchozí hodnoty AUTO_INCREMENT
+ALTER TABLE `uzivatele`
+    AUTO_INCREMENT = 1000;
+
+-- Přidání indexu na jeden sloupec
+ALTER TABLE `clanky`
+    ADD INDEX (`url`);
+
+-- Přidání složeného indexu (nad více sloupci)
+ALTER TABLE `uzivatele`
+    ADD INDEX (`prezdivka`, `email`);
+
+-- Změna úložného systému (ENGINE)
+ALTER TABLE `clanky` ENGINE = InnoDB;
+```
+
+---
+
+## 16. Transakce
+
+Transakce zajišťují vlastnost **ACID** (především atomičnost – buď se provede celá sada příkazů korektně, nebo se neprovede vůbec nic). Typickým příkladem je bankovní převod (odepsání z jednoho účtu a připsání na druhý).
+
+```sql
+START TRANSACTION;
+-- Lze použít i: BEGIN;
+
+    UPDATE `ucty` SET `zustatek` = `zustatek` - 100 WHERE `cislo_uctu` = 123456789;
+    UPDATE `ucty` SET `zustatek` = `zustatek` + 100 WHERE `cislo_uctu` = 987654321;
+
+COMMIT;     -- Potvrzení: změny se trvale zapíší do databáze
+
+-- ROLLBACK; -- Zrušení: změny se zahodí a tabulky se vrátí do původního stavu před transakcí
+```
+
+---
+
+## 17. Pohledy (VIEW)
+
+`VIEW` funguje jako uložený `SELECT` dotaz, který se navenek chová jako virtuální tabulka. Při každém volání pohledu se na pozadí znovu vykoná definovaný podkladový dotaz.
+
+```sql
+-- Vytvoření pohledu
+CREATE VIEW `algoritmy` AS
 SELECT *
-FROM simple_money1.bank_account AS ba
-WHERE ba.bank_code NOT IN (
-    SELECT bc.bank_code FROM simple_money1.bank_code AS bc
+FROM `clanky`
+WHERE `clanky_id` IN (
+    SELECT `clanek_id`
+    FROM `clanek_sekce`
+    WHERE `sekce_id` = (
+        SELECT `sekce_id` FROM `sekce` WHERE `nazev` = 'Algoritmy'
+    )
 );
 
--- Komentáře vybraných uživatelů k prvním dvěma článkům
-SELECT k.clanek_id, k.obsah AS KOMENTAR, u.prezdivka AS AUTOR
-FROM it_web_magazine1.komentare AS k
-JOIN it_web_magazine1.uzivatele AS u ON k.uzivatel_id = u.uzivatele_id
-WHERE (u.prezdivka = 'david' OR u.prezdivka = 'EMA')
-  AND k.clanek_id <= 2
-ORDER BY k.clanek_id;
+-- Použití pohledu (stejné jako u běžné tabulky)
+SELECT `titulek` FROM `algoritmy`;
+
+-- Smazání pohledu
+DROP VIEW `algoritmy`;
 ```
 
 ---
 
-## 8. Uložené procedury (Procedures)
+## 18. Indexy a optimalizace
 
-### Přehled procedur
+Indexy výrazně urychlují vyhledávání (`SELECT`), ale zpomalují zápisové operace (`INSERT`, `UPDATE`, `DELETE`), protože se index musí při každé změně přepočítat. Vyplatí se je nasazovat na sloupce, podle kterých se často filtruje (`WHERE`) nebo řadí (`ORDER BY`).
 
-| Procedura | Schéma | Popis | Parametry |
-|---|---|---|---|
-| `FindThief` | `it_web_magazine1` | Vyhledání autora článku podle klíčového slova v popisu | `IN hledane_slovo` |
-| `SelectCar` | `insane_racing1` | Nejrychlejší vozidlo do 3 000 kg | – |
-| `ToJeBordel` | `simple_money1` | Nejlevnější produkt podle přibližného názvu | `IN priblizny_nazev_produktu` |
-| `Zlodej` | `it_web_magazine1` | Kompletní info o uživateli a jeho článku se slovem "mouse" | `IN jmeno` |
-| `BohatyAVykutaleny` | `insane_racing1` | Součet přijatých transakcí uživatele | `IN id_uzivatele`, `INOUT jiz_spoctena_suma` |
-| `VrabecVHrsti` | `simple_money1` | Detail adresy uživatele do OUT proměnných | `IN id_uzivatele`, `OUT adresa_cislo, ulice, ...` |
-| `ZmetourJeden` | `it_web_magazine1` | Podmíněné vyhodnocení přezdívky uživatele | `IN p_id_uzivatele`, `OUT jaky_je` |
-| `JsiNahranyChlapce` | `insane_racing1` | Vynulování transakcí a vrácení nového součtu | `IN id_uzivatele`, `OUT prasulky` |
-| `vyberProdukt` | `simple_money1` | Nejdražší produkt v cenovém rozmezí | `IN hledany_produkt, cena_min, cena_max`, `OUT produkt, cena` |
+* `PRIMARY KEY` automaticky vytváří unikátní index.
+* Sloupec s modifikátorem `UNIQUE` rovněž generuje index automaticky.
+
+```sql
+-- Přidání jednoduchého indexu
+ALTER TABLE `clanky` ADD INDEX (`url`);
+
+-- Přidání fulltextového indexu
+ALTER TABLE `clanky` ADD FULLTEXT (`titulek`, `obsah`);
+
+-- Zobrazení všech indexů na tabulce
+SHOW INDEX FROM `clanky`;
+
+-- Smazání indexu
+ALTER TABLE `clanky` DROP INDEX `url`;
+```
 
 ---
 
-### Ukázky kódu procedur
+## 19. Fulltextové vyhledávání
 
-#### `FindThief` – IN parametr
+Je mnohem rychlejší a sofistikovanější než běžné vyhledávání pomocí `LIKE '%text%'`.
+* ⚠️ Vyžaduje `FULLTEXT` index.
+* ⚠️ Je podporováno pouze nad úložnými systémy **InnoDB** nebo **MyISAM**.
+* ⚠️ Velmi krátká slova (standardně méně než 4 znaky) jsou indexem ignorována.
+
 ```sql
-DELIMITER $
-CREATE PROCEDURE it_web_magazine1.FindThief(IN hledane_slovo VARCHAR(10))
-BEGIN
-    SELECT u.prezdivka
-    FROM it_web_magazine1.clanky AS c
-    JOIN it_web_magazine1.uzivatele AS u ON c.autor_id = u.uzivatele_id
-    WHERE c.popis LIKE CONCAT('%', hledane_slovo, '%');
-END $
-DELIMITER ;
+-- Základní vyhledávání (výsledky jsou automaticky seřazeny dle relevance)
+SELECT `nazev`, `obsah`
+FROM `prispevky`
+WHERE MATCH(`nazev`, `obsah`) AGAINST('databáze');
+
+-- IN BOOLEAN MODE – pokročilé vyhledávání s operátory (zde fungují i krátká slova)
+--   +slovo -> musí obsahovat
+--   -slovo -> nesmí obsahovat
+--   * -> zástupný znak na konci (prefixové hledání)
+SELECT `id`, `nazev`, `obsah`
+FROM `prispevky`
+WHERE MATCH(`nazev`, `obsah`) AGAINST('+databáze -Oracle' IN BOOLEAN MODE);
+
+SELECT `nazev` FROM `prispevky`
+WHERE MATCH(`nazev`, `obsah`) AGAINST('data*' IN BOOLEAN MODE);
 ```
 
-#### `BohatyAVykutaleny` – INOUT parametr
+---
+
+## 20. Triggery
+
+Trigger je pojmenovaný SQL blok, který se **automaticky spustí** před (`BEFORE`) nebo po (`AFTER`) provedení události `INSERT`, `UPDATE` nebo `DELETE` nad konkrétní tabulkou.
+
+Uvnitř triggeru máme přístup ke speciálním proměnným:
+* `NEW.sloupec` – obsahuje nově vkládanou / upravovanou hodnotu.
+* `OLD.sloupec` – obsahuje původní (předchozí / mazanou) hodnotu.
+
 ```sql
+-- Příklad: BEFORE INSERT – úprava souhrnné statistiky před fyzickým vložením
 DELIMITER $
-CREATE PROCEDURE insane_racing1.BohatyAVykutaleny(
-    IN id_uzivatele INT,
-    INOUT jiz_spoctena_suma INT
-)
+CREATE TRIGGER `before_insert_pobocky`
+    BEFORE INSERT ON `pobocky`
+    FOR EACH ROW
 BEGIN
-    SET jiz_spoctena_suma = (
-        SELECT SUM(castka)
-        FROM insane_racing1.transakce
-        WHERE uzivatel_id = id_uzivatele AND stav = 'obdrzeno'
-    );
-END $
+    UPDATE `statistika_pobocek`
+    SET `pocet_pracovniku_celkem` = `pocet_pracovniku_celkem` + NEW.`pocet_pracovniku`;
+END$
 DELIMITER ;
-```
 
-#### `VrabecVHrsti` – OUT parametry
-```sql
+-- Příklad: BEFORE UPDATE – zápis historie změn s využitím podmínky IF/ELSEIF
 DELIMITER $
-CREATE PROCEDURE simple_money1.VrabecVHrsti(
-    IN  id_uzivatele INT,
-    OUT adresa_cislo INT,
-    OUT ulice        VARCHAR(60),
-    OUT registrace_cislo INT,
-    OUT dum_cislo    INT,
-    OUT mesto        VARCHAR(60),
-    OUT psc          INT
-)
+CREATE TRIGGER `before_update_pobocky`
+    BEFORE UPDATE ON `pobocky`
+    FOR EACH ROW
 BEGIN
-    SELECT a.address_id, a.street, a.registry_number, a.house_number, a.city, a.zip
-    INTO adresa_cislo, ulice, registrace_cislo, dum_cislo, mesto, psc
-    FROM simple_money1.person AS p
-    JOIN simple_money1.address AS a ON p.address_id = a.address_id
-    WHERE p.person_id = id_uzivatele;
-END $
-DELIMITER ;
-```
-
-#### `ZmetourJeden` – IF-ELSE větvení
-```sql
-DELIMITER $
-CREATE PROCEDURE it_web_magazine1.ZmetourJeden(
-    IN  p_id_uzivatele INT,
-    OUT jaky_je        VARCHAR(30)
-)
-BEGIN
-    DECLARE v_nik VARCHAR(60);
-    SELECT prezdivka INTO v_nik
-    FROM it_web_magazine1.uzivatele
-    WHERE uzivatele_id = p_id_uzivatele;
-
-    IF v_nik = 'denny' THEN
-        SET jaky_je = 'ZMETEK';
+    IF NEW.`pocet_pracovniku` > OLD.`pocet_pracovniku` THEN
+        INSERT INTO `historie_pobocek` VALUES (NULL, OLD.`id_pobocky`, OLD.`mesto`, OLD.`nazev`, OLD.`pocet_pracovniku`, NOW(), 'Update - zvětšena');
+    ELSEIF NEW.`pocet_pracovniku` < OLD.`pocet_pracovniku` THEN
+        INSERT INTO `historie_pobocek` VALUES (NULL, OLD.`id_pobocky`, OLD.`mesto`, OLD.`nazev`, OLD.`pocet_pracovniku`, NOW(), 'Update - zmenšena');
     ELSE
-        SET jaky_je = 'NEVINNÝ ČLOVÍČEK';
+        INSERT INTO `historie_pobocek` VALUES (NULL, OLD.`id_pobocky`, OLD.`mesto`, OLD.`nazev`, OLD.`pocet_pracovniku`, NOW(), 'Update - nezměněna');
     END IF;
-END $
+
+    UPDATE `statistika_pobocek`
+    SET `pocet_pracovniku_celkem` = `pocet_pracovniku_celkem` - OLD.`pocet_pracovniku` + NEW.`pocet_pracovniku`;
+END$
 DELIMITER ;
+
+-- Příklad: AFTER DELETE – zalogování smazaného záznamu
+DELIMITER $
+CREATE TRIGGER `after_delete_pobocky`
+    AFTER DELETE ON `pobocky`
+    FOR EACH ROW
+BEGIN
+    INSERT INTO `historie_pobocek`
+    VALUES (NULL, OLD.`id_pobocky`, OLD.`mesto`, OLD.`nazev`, OLD.`pocet_pracovniku`, NOW(), 'DELETE');
+
+    UPDATE `statistika_pobocek`
+    SET `pocet_pracovniku_celkem` = `pocet_pracovniku_celkem` - OLD.`pocet_pracovniku`;
+END$
+DELIMITER ;
+
+-- Zobrazení triggerů v databázi
+SHOW TRIGGERS FROM `it_web_magazine1`;
+
+-- Odstranění triggeru
+DROP TRIGGER IF EXISTS `before_update_pobocky`;
 ```
 
-#### `vyberProdukt` – kombinace IN a OUT parametrů
+---
+
+## 21. Uložené procedury a funkce
+
+* **Procedura** je pojmenovaný blok příkazů uložený na serveru. Volá se explicitně pomocí příkazu `CALL`. Může mít parametry typu `IN` (vstupní), `OUT` (výstupní) a `INOUT` (vstupně-výstupní).
+* **Funkce** je podobná proceduře, ale **vždy vrací právě jednu hodnotu** (`RETURNS`) a lze ji volat přímo uvnitř standardních SQL dotazů (např. v `SELECT` nebo `WHERE`).
+
 ```sql
+-- ---- Procedura bez parametrů ----
 DELIMITER $
-CREATE PROCEDURE simple_money1.vyberProdukt(
-    IN  hledany_produkt VARCHAR(60),
-    IN  cena_min        INT,
-    IN  cena_max        INT,
-    OUT produkt         VARCHAR(160),
-    OUT cena            INT
+CREATE PROCEDURE `GetPobocky`()
+BEGIN
+    SELECT * FROM `pobocky`;
+END$
+DELIMITER ;
+
+CALL `GetPobocky`();
+DROP PROCEDURE IF EXISTS `GetPobocky`;
+
+-- ---- Procedura s IN parametrem ----
+DELIMITER $
+CREATE PROCEDURE `SetPobocky`(
+    IN p_mesto           VARCHAR(50),
+    IN p_nazev           VARCHAR(50),
+    IN p_pocet_prac      INT
 )
 BEGIN
-    SELECT title, price INTO produkt, cena
-    FROM simple_money1.item
-    WHERE title LIKE CONCAT('%', hledany_produkt, '%')
-      AND price BETWEEN cena_min AND cena_max
-    ORDER BY price DESC
-    LIMIT 1;
-END $
-DELIMITER ;
-```
-
----
-
-## 9. Triggery
-
-Triggery se automaticky spouštějí při události `INSERT`, `UPDATE` nebo `DELETE` na dané tabulce. Používají se pro auditování změn, kaskádové mazání nebo automatické aktualizace dat.
-
-### Přehled triggerů
-
-| Trigger | Schéma | Událost | Tabulka | Popis |
-|---|---|---|---|---|
-| `after_update` | `it_web_magazine1` | AFTER UPDATE | `komentare` | Uloží původní obsah komentáře do `historie_zmen` |
-| `after_delete_uzivatel` | `insane_racing1` | AFTER DELETE | `uzivatele` | Smaže záznamy uživatele z `uzivatele_turnaje` a `uzivatele_vozidla` |
-| `insert_to_country` | `simple_money1` | AFTER INSERT | `country` | Aktualizuje `country_id` v tabulce `address` pro obec Černíny |
-| `insert_clanek_pochleb` | `it_web_magazine1` | AFTER INSERT | `clanky` | Vloží dva pochlebné komentáře ke každému novému článku autora s ID 2 |
-| `update_meny_dolar` | `insane_racing1` | AFTER INSERT | `vyhry` | Nastaví kurz všech měn obsahujících "Dollar" (kromě American Dollar) na 40 |
-| `update_item_top_10` | `simple_money1` | AFTER INSERT | `user` | Přidá "BLACK FRIDAY SALE!!!" k názvům 10 nejdražších produktů a sníží cenu o 10 % |
-| `aktivovano_300` | `insane_racing1` | AFTER INSERT | `transakce` | Aktivuje uživatele, pokud jeho celková suma transakcí překročí 300 |
-| `plati_ZUNO` | `simple_money1` | AFTER UPDATE | `bank_code` | Při přejmenování banky na výroční název nastaví cenu každého 25. produktu na 0 |
-
----
-
-### Ukázky kódu triggerů
-
-#### `after_update` – audit změn komentářů (AFTER UPDATE)
-
-Po úpravě komentáře se původní znění automaticky zaznamená do archivní tabulky.
-
-```sql
-DELIMITER $
-CREATE TRIGGER IF NOT EXISTS after_update AFTER UPDATE
-ON it_web_magazine1.komentare FOR EACH ROW
-BEGIN
-    INSERT INTO it_web_magazine1.historie_zmen
-        (id, komentare_id, clanek_id, uzivatel_id, obsah, datum)
-    VALUES
-        (NULL, OLD.komentare_id, OLD.clanek_id, OLD.uzivatel_id, OLD.obsah, NOW());
-END $
+    INSERT INTO `pobocky` VALUES (NULL, p_mesto, p_nazev, p_pocet_prac);
+END$
 DELIMITER ;
 
--- Test triggeru:
-UPDATE it_web_magazine1.komentare
-SET obsah = 'ROZUMÍM TOMU!'
-WHERE komentare_id = 7;
-```
+CALL `SetPobocky`('Praha', 'Pobočka Praha', 120);
 
-> **Klíčové:** `OLD.sloupec` obsahuje hodnoty **před** změnou, `NEW.sloupec` hodnoty **po** změně.
-
----
-
-#### `after_delete_uzivatel` – kaskádové mazání (AFTER DELETE)
-
-Při smazání uživatele se automaticky odstraní i jeho záznamy v propojených tabulkách.
-
-```sql
+-- ---- Procedura s OUT parametrem ----
 DELIMITER $
-CREATE TRIGGER IF NOT EXISTS after_delete_uzivatel AFTER DELETE
-ON insane_racing1.uzivatele FOR EACH ROW
+CREATE PROCEDURE `PocetPobocekVeMeste`(
+    IN  p_mesto       VARCHAR(50),
+    OUT p_pocet       INT
+)
 BEGIN
-    DELETE FROM insane_racing1.uzivatele_turnaje WHERE uzivatel_id = OLD.uzivatel_id;
-    DELETE FROM insane_racing1.uzivatele_vozidla WHERE uzivatel_id = OLD.uzivatel_id;
-END $
+    SELECT COUNT(`id_pobocky`) INTO p_pocet
+    FROM `pobocky`
+    WHERE `mesto` LIKE p_mesto;
+END$
 DELIMITER ;
 
--- Test triggeru:
-DELETE FROM insane_racing1.uzivatele WHERE uzivatel_id = 11;
-```
+CALL `PocetPobocekVeMeste`('Praha', @pocet);
+SELECT @pocet AS `Počet poboček`;
 
----
-
-#### `insert_to_country` – podmíněná aktualizace (AFTER INSERT + IF)
-
-Trigger se spustí po každém vložení do tabulky, ale akci provede jen při splnění podmínky.
-
-```sql
+-- ---- Procedura s INOUT parametrem ----
 DELIMITER $
-CREATE TRIGGER IF NOT EXISTS insert_to_country AFTER INSERT
-ON simple_money1.country FOR EACH ROW
+CREATE PROCEDURE `Pocitadlo`(
+    INOUT p_hodnota INT,
+    IN    p_navyseni INT
+)
 BEGIN
-    IF NEW.title = 'JAR' THEN
-        UPDATE simple_money1.address
-        SET country_id = NEW.country_id
-        WHERE city = 'Černiny';
+    SET p_hodnota = p_hodnota + p_navyseni;
+END$
+DELIMITER ;
+
+SET @hodnota = 0;
+CALL `Pocitadlo`(@hodnota, 5);
+CALL `Pocitadlo`(@hodnota, 3);
+SELECT @hodnota;   -- Výsledek bude 8
+
+-- ---- Funkce ----
+DELIMITER $
+CREATE FUNCTION `VelikostPobocky`(pocet_zam INT)
+    RETURNS VARCHAR(60)
+BEGIN
+    DECLARE velikost VARCHAR(50);
+
+    IF pocet_zam < 50 THEN
+        SET velikost = 'Malá pobočka';
+    ELSEIF pocet_zam < 100 THEN
+        SET velikost = 'Střední pobočka';
+    ELSE
+        SET velikost = 'Velká pobočka';
     END IF;
-END $
+
+    RETURN velikost;
+END$
 DELIMITER ;
 
--- Test triggeru:
-INSERT INTO simple_money1.country VALUES (NULL, 'JAR');
+-- Použití vytvořené funkce přímo v SELECT dotazu
+SELECT *, `VelikostPobocky`(`pocet_pracovniku`) AS `Velikost`
+FROM `pobocky`;
+
+DROP FUNCTION IF EXISTS `VelikostPobocky`;
+
+-- Výpis všech dostupných procedur a funkcí
+SHOW PROCEDURE STATUS;
+SHOW FUNCTION STATUS;
 ```
 
 ---
 
-#### `insert_clanek_pochleb` – vložení více záznamů podmíněně (AFTER INSERT)
+## 22. Cizí klíče (FOREIGN KEY)
 
-Trigger vkládá komentáře pouze pokud článek napsal konkrétní autor (ID 2).
+Propojuje sloupec v podřízené (závislé) tabulce s primárním klíčem nadřízené tabulky. Zajišťuje **referenční integritu** dat.
+* ⚠️ Vyžaduje úložný systém **InnoDB**.
+
+### Chování při smazání (`ON DELETE`) / úpravě (`ON UPDATE`):
+* `CASCADE` – kaskádová reakce: smaže/upraví i všechny navázané záznamy v podřízené tabulce.
+* `SET NULL` – nastaví hodnotu cizího klíče na `NULL` (sloupec v podřízené tabulce musí hodnotu `NULL` povolovat).
+* `RESTRICT` / `NO ACTION` *(výchozí)* – zamezí operaci, dokud na záznam odkazují jakékoliv závislé řádky.
 
 ```sql
-DELIMITER $
-CREATE TRIGGER IF NOT EXISTS insert_clanek_pochleb AFTER INSERT
-ON it_web_magazine1.clanky FOR EACH ROW
-BEGIN
-    IF NEW.autor_id = 2 THEN
-        INSERT INTO it_web_magazine1.komentare VALUES
-            (NULL, NEW.clanky_id, 1, 'Boží článek!', NOW()),
-            (NULL, NEW.clanky_id, 3, 'Kdyby jsi kandidoval na prezidenta, hned tě volím.', NOW());
-    END IF;
-END $
-DELIMITER ;
+-- Přidání cizího klíče přes ALTER TABLE
+ALTER TABLE `komentare`
+    ADD CONSTRAINT `fk_komentar_clanek`
+        FOREIGN KEY (`clanek_id`)
+            REFERENCES `clanky` (`clanky_id`)
+            ON UPDATE CASCADE
+            ON DELETE CASCADE;
+
+-- Kombinace různých typů chování
+ALTER TABLE `komentare`
+    ADD CONSTRAINT `fk_komentar_uzivatel`
+        FOREIGN KEY (`uzivatel_id`)
+            REFERENCES `uzivatele` (`uzivatele_id`)
+            ON UPDATE CASCADE
+            ON DELETE SET NULL;
+
+-- Definice cizího klíče přímo při vytváření tabulky (CREATE TABLE)
+CREATE TABLE `objednavky`
+(
+    `objednavka_id` INT NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    `uzivatel_id`   INT NOT NULL,
+    CONSTRAINT `fk_obj_uzivatel`
+        FOREIGN KEY (`uzivatel_id`) REFERENCES `uzivatele` (`uzivatele_id`)
+        ON DELETE RESTRICT
+        ON UPDATE CASCADE
+);
+
+-- Zobrazení kompletního SQL příkazu pro vytvoření tabulky (včetně cizích klíčů)
+SHOW CREATE TABLE `komentare`;
+
+-- Smazání cizího klíče
+ALTER TABLE `komentare`
+    DROP FOREIGN KEY `fk_komentar_clanek`;
+
+-- Vyhledání cizích klíčů v systémové schémě
+SELECT `TABLE_NAME`, `CONSTRAINT_NAME`, `REFERENCED_TABLE_NAME`, `DELETE_RULE`, `UPDATE_RULE`
+FROM `information_schema`.`REFERENTIAL_CONSTRAINTS`
+WHERE `CONSTRAINT_SCHEMA` = 'moje_db';
+
+-- Dočasné vypnutí kontrol cizích klíčů (např. při importu velkých dat – používat opatrně!)
+SET FOREIGN_KEY_CHECKS = 0;
+-- ... vaše operace ...
+SET FOREIGN_KEY_CHECKS = 1;
 ```
 
 ---
 
-#### `aktivovano_300` – výpočet agregace uvnitř triggeru (AFTER INSERT)
-
-Trigger po každé nové transakci přepočítá součet a podmíněně aktivuje uživatele.
+## 23. Uživatelé a oprávnění
 
 ```sql
-DELIMITER $
-CREATE TRIGGER IF NOT EXISTS aktivovano_300 AFTER INSERT
-ON insane_racing1.transakce FOR EACH ROW
-BEGIN
-    UPDATE insane_racing1.uzivatele
-    SET aktivovano = (
-        IFNULL((SELECT SUM(castka)
-                FROM insane_racing1.transakce
-                WHERE uzivatel_id = NEW.uzivatel_id), 0)
-    ) >= 300
-    WHERE uzivatel_id = NEW.uzivatel_id;
-END $
-DELIMITER ;
+-- Vytvoření nového uživatele (pokud neexistuje)
+CREATE USER IF NOT EXISTS `novak`@`localhost` IDENTIFIED BY 'silneHeslo123';
 
--- Test triggeru:
-INSERT INTO insane_racing1.transakce VALUES (NULL, 6, 80, 9, 80, NOW(), 'obdrzeno');
+-- Udělení konkrétních oprávnění nad konkrétní databází
+GRANT SELECT, INSERT, UPDATE ON `moje_db`.* TO `novak`@`localhost`;
+
+-- Udělení úplně všech oprávnění
+GRANT ALL PRIVILEGES ON `moje_db`.* TO `novak`@`localhost`;
+
+-- Výpis všech uživatelů registrovaných na MySQL serveru
+SELECT `user`, `host` FROM `mysql`.`user`;
+
+-- Smazání uživatele
+DROP USER IF EXISTS `novak`@`localhost`;
 ```
+
+### 🔐 Přehled základních oprávnění:
+* `ALL PRIVILEGES` – udělí veškerá práva (včetně spouštění rutin).
+* `SELECT` – právo na čtení a výběr dat.
+* `INSERT` – právo na vkládání nových záznamů.
+* `UPDATE` – právo na modifikaci stávajících dat.
+* `DELETE` – právo na odstraňování řádků.
+* `CREATE` – právo na zakládání nových tabulek nebo databází.
+* `DROP` – právo na odstraňování celých tabulek či databází.
+* `EXECUTE` – právo na spouštění uložených procedur a funkcí.
+
+### 👥 Rozdíl mezi DEFINER a INVOKER v rutinách:
+* **`DEFINER`** *(výchozí)* – Procedura se vykonává pod právy uživatele, který ji **vytvořil** (např. root). Uživatel, který nemá právo `DELETE`, tak může nepřímo smazat řádek, pokud k tomu použije tuto proceduru.
+* **`INVOKER`** – Procedura se vykonává výhradně pod právy uživatele, který ji aktuálně **volá**. Pokud volající uživatel nemá potřebná práva, databáze vrátí chybu.
 
 ---
 
-#### `update_item_top_10` – hromadná UPDATE uvnitř triggeru (AFTER INSERT)
-
-Při registraci nového uživatele se spustí marketingová akce na 10 nejdražších produktů.
+## ⚡ Rychlý přehled příkazů – Cheat Sheet
 
 ```sql
-DELIMITER $
-CREATE TRIGGER IF NOT EXISTS update_item_top_10 AFTER INSERT
-ON simple_money1.user FOR EACH ROW
-BEGIN
-    UPDATE simple_money1.item AS i
-    SET i.title = CONCAT(i.title, ' BLACK FRIDAY SALE!!!'),
-        i.price = i.price * 0.9
-    WHERE TRUE
-    ORDER BY i.price DESC, i.product_id
-    LIMIT 10;
-END $
-DELIMITER ;
+# DATABÁZE
+  CREATE DATABASE db CHARSET utf8 COLLATE utf8_czech_ci;
+  DROP DATABASE db;
+
+# TABULKY
+  CREATE TABLE t (...);  DROP TABLE t;
+  ALTER TABLE t ADD COLUMN c INT;
+  ALTER TABLE t MODIFY COLUMN c BIGINT;
+  ALTER TABLE t DROP COLUMN c;
+
+# DATA
+  INSERT INTO t (sl1,sl2) VALUES (v1,v2),(v3,v4);
+  UPDATE t SET sl1=v1 WHERE podmínka;
+  DELETE FROM t WHERE podmínka;
+  TRUNCATE TABLE t;
+
+# VÝBĚR
+  SELECT sl FROM t WHERE p ORDER BY sl LIMIT n;
+  GROUP BY sl HAVING agregace > hodnota
+  JOIN t2 ON t.id = t2.fk
+
+# POKROČILÉ
+  CREATE VIEW v AS SELECT ...;
+  CREATE TRIGGER tr AFTER INSERT ON t FOR EACH ROW BEGIN..
+  CREATE PROCEDURE p(IN x INT) BEGIN ... END;
+  CREATE FUNCTION f(x INT) RETURNS INT BEGIN ... END;
+  ALTER TABLE t ADD CONSTRAINT fk FOREIGN KEY (col) REFERENCES t2(col) ON DELETE CASCADE;
+  GRANT SELECT ON db.* TO user@localhost;
 ```
-
----
-
-#### `plati_ZUNO` – trigger na UPDATE tabulky (AFTER UPDATE)
-
-Trigger reaguje na přejmenování záznamu a provede hromadnou aktualizaci produktů.
-
-```sql
-DELIMITER $
-CREATE TRIGGER IF NOT EXISTS plati_ZUNO AFTER UPDATE
-ON simple_money1.bank_code FOR EACH ROW
-BEGIN
-    IF NEW.bank_name = 'ZUNO BANK AG - 25 anniversary' THEN
-        UPDATE simple_money1.item AS i
-        SET i.title = CONCAT(i.title, ' zaplaceno ZUNO BANK AG'),
-            i.price = 0
-        WHERE i.product_id % 25 = 0;
-    END IF;
-END $
-DELIMITER ;
-
--- Test triggeru:
-UPDATE simple_money1.bank_code
-SET bank_name = 'ZUNO BANK AG - 25 anniversary'
-WHERE bank_name LIKE '%ZUNO BANK%';
-```
-
----
-
-### Správa triggerů
-
-```sql
--- Zobrazení všech triggerů v databázi
-SHOW TRIGGERS FROM it_web_magazine1;
-
--- Smazání triggeru
-DROP TRIGGER it_web_magazine1.nazev_triggeru;
-```
-
----
-
-## 📌 Poznámky
-
-- Všechny procedury a triggery jsou definovány s `DELIMITER $` aby nedocházelo ke konfliktu se středníky uvnitř těla.
-- Při volání procedur s `OUT`/`INOUT` parametry je nutné předat uživatelské proměnné: `CALL procedura(1, @vysledek); SELECT @vysledek;`
-- Triggery nelze volat ručně – spouštějí se automaticky při příslušné DML operaci.
-- Příklady jsou kompatibilní s **MySQL 5.7+** a **MariaDB 10.3+**.
-
----
-
-*Sbírka průběžně rozšiřována o nové příklady a techniky.*
