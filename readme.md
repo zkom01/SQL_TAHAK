@@ -31,7 +31,7 @@ Komplexní přehled syntaxe, datových typů, operací a pokročilých funkcí v
 
 ---
 
-## 1. Databáze <sub style="float: right; font-size: 0.65em; margin-top: 6px">[↩ Zpět na obsah](#-obsah)</sub>
+## 1. Databáze <p align="right"><sub style="font-size: 0.65em;">[↩ Zpět na obsah](#-obsah)</sub></p>
 
 ```sql
 -- Vytvoření databáze (utf8 + české řazení)
