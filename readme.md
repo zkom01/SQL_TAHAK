@@ -31,7 +31,7 @@ Komplexní přehled syntaxe, datových typů, operací a pokročilých funkcí v
 
 ---
 
-## 1. Databáze [↩ Zpět na obsah](#-obsah)
+## 1. Databáze
 
 ```sql
 -- Vytvoření databáze (utf8 + české řazení)
@@ -43,7 +43,7 @@ DROP DATABASE `moje_db`;
 
 ---
 
-## 2. Tabulky  [↩ Zpět na obsah](#-obsah)
+## 2. Tabulky
 
 ```sql
 -- Vytvoření tabulky
@@ -93,7 +93,7 @@ DROP TABLE `uzivatele`;
 
 ---
 
-## 3. Modifikátory sloupců [↩ Zpět na obsah](#-obsah)
+## 3. Modifikátory sloupců
 
 * **`NOT NULL`** – hodnota nesmí být NULL.
 * **`NULL`** – hodnota může být NULL (výchozí chování).
@@ -104,7 +104,7 @@ DROP TABLE `uzivatele`;
 
 ---
 
-## 4. INSERT – vkládání dat [↩ Zpět na obsah](#-obsah)
+## 4. INSERT – vkládání dat
 
 ```sql
 -- Vložení jednoho záznamu
@@ -120,7 +120,7 @@ VALUES ('Tomáš', 'Marný',     '1989-02-01', 6),
 
 ---
 
-## 5. UPDATE – aktualizace dat [↩ Zpět na obsah](#-obsah)
+## 5. UPDATE – aktualizace dat
 
 > ⚠️ **POZOR:** VŽDY uváděj podmínku **`WHERE`**, jinak se změní **VŠECHNY** řádky v tabulce!
 
@@ -139,7 +139,7 @@ WHERE `max_rychlost` > 320;
 
 ---
 
-## 6. DELETE a TRUNCATE – mazání dat [↩ Zpět na obsah](#-obsah)
+## 6. DELETE a TRUNCATE – mazání dat
 
 ```sql
 -- Smazání konkrétního záznamu
@@ -158,7 +158,7 @@ TRUNCATE TABLE `uzivatele`;
 
 ---
 
-## 7. SELECT – výběr dat a podmínky WHERE [↩ Zpět na obsah](#-obsah)
+## 7. SELECT – výběr dat a podmínky WHERE
 
 ```sql
 -- Výběr všech sloupců
@@ -188,7 +188,7 @@ SELECT * FROM `uzivatele` WHERE `pocet_clanku` IS NOT NULL;
 
 ---
 
-## 8. LIKE, BETWEEN, IN [↩ Zpět na obsah](#-obsah)
+## 8. LIKE, BETWEEN, IN
 
 ```sql
 -- LIKE – vzorové hledání (% = libovolný počet znaků, _ = přesně jeden znak)
@@ -214,7 +214,7 @@ WHERE `bank_code` NOT IN (SELECT `bank_code` FROM `bank_code`);
 
 ---
 
-## 9. ORDER BY a LIMIT [↩ Zpět na obsah](#-obsah)
+## 9. ORDER BY a LIMIT
 
 ```sql
 -- Řazení vzestupně (ASC = výchozí, netřeba uvádět)
@@ -241,7 +241,7 @@ LIMIT 10 OFFSET 20;   -- vrátí záznamy 21–30
 
 ---
 
-## 10. Agregační funkce [↩ Zpět na obsah](#-obsah)
+## 10. Agregační funkce
 
 ```sql
 -- COUNT – počet řádků splňujících podmínku
@@ -271,7 +271,7 @@ SELECT MAX(`pocet_clanku`)   FROM `uzivatele`;
 
 ---
 
-## 11. GROUP BY + HAVING [↩ Zpět na obsah](#-obsah)
+## 11. GROUP BY + HAVING
 
 ### ⏳ Pořadí klauzulí v SQL dotazu:
 `SELECT` … `FROM` … `WHERE` … `GROUP BY` … `HAVING` … `ORDER BY` … `LIMIT` …
@@ -305,7 +305,7 @@ HAVING `pocet_zakazniku` > 1;       -- filtruje PO seskupením
 
 ---
 
-## 12. JOIN – dotazy přes více tabulek [↩ Zpět na obsah](#-obsah)
+## 12. JOIN – dotazy přes více tabulek
 
 **Schéma příkladu:** `clanky.autor_id` ↔ `uzivatele.uzivatele_id`
 
@@ -345,7 +345,7 @@ ORDER BY `k`.`datum`;
 
 ---
 
-## 13. Aliasy [↩ Zpět na obsah](#-obsah)
+## 13. Aliasy
 
 ```sql
 -- Alias sloupce (klíčové slovo AS je nepovinné, ale doporučené pro čitelnost)
@@ -359,7 +359,7 @@ FROM `uzivatele` AS `u`
 
 ---
 
-## 14. Poddotazy (Subqueries) [↩ Zpět na obsah](#-obsah)
+## 14. Poddotazy (Subqueries)
 
 ```sql
 -- Poddotaz ve WHERE – očekává a vrací právě jednu hodnotu
@@ -432,7 +432,7 @@ SELECT NULL, 'SOUČET', SUM(`price`) FROM `faktury_srpen`;
 
 ---
 
-## 15. ALTER TABLE – změna struktury tabulky [↩ Zpět na obsah](#-obsah)
+## 15. ALTER TABLE – změna struktury tabulky
 
 ```sql
 -- Přidání nového sloupce
@@ -465,7 +465,7 @@ ALTER TABLE `clanky` ENGINE = InnoDB;
 
 ---
 
-## 16. Transakce [↩ Zpět na obsah](#-obsah)
+## 16. Transakce
 
 Transakce zajišťují vlastnost **ACID** (především atomičnost – buď se provede celá sada příkazů korektně, nebo se neprovede vůbec nic). Typickým příkladem je bankovní převod (odepsání z jednoho účtu a připsání na druhý).
 
@@ -483,7 +483,7 @@ COMMIT;     -- Potvrzení: změny se trvale zapíší do databáze
 
 ---
 
-## 17. Pohledy (VIEW) [↩ Zpět na obsah](#-obsah)
+## 17. Pohledy (VIEW)
 
 `VIEW` funguje jako uložený `SELECT` dotaz, který se navenek chová jako virtuální tabulka. Při každém volání pohledu se na pozadí znovu vykoná definovaný podkladový dotaz.
 
@@ -509,7 +509,7 @@ DROP VIEW `algoritmy`;
 
 ---
 
-## 18. Indexy a optimalizace [↩ Zpět na obsah](#-obsah)
+## 18. Indexy a optimalizace
 
 Indexy výrazně urychlují vyhledávání (`SELECT`), ale zpomalují zápisové operace (`INSERT`, `UPDATE`, `DELETE`), protože se index musí při každé změně přepočítat. Vyplatí se je nasazovat na sloupce, podle kterých se často filtruje (`WHERE`) nebo řadí (`ORDER BY`).
 
@@ -532,7 +532,7 @@ ALTER TABLE `clanky` DROP INDEX `url`;
 
 ---
 
-## 19. Fulltextové vyhledávání [↩ Zpět na obsah](#-obsah)
+## 19. Fulltextové vyhledávání
 
 Je mnohem rychlejší a sofistikovanější než běžné vyhledávání pomocí `LIKE '%text%'`.
 * ⚠️ Vyžaduje `FULLTEXT` index.
@@ -559,7 +559,7 @@ WHERE MATCH(`nazev`, `obsah`) AGAINST('data*' IN BOOLEAN MODE);
 
 ---
 
-## 20. Triggery [↩ Zpět na obsah](#-obsah)
+## 20. Triggery
 
 Trigger je pojmenovaný SQL blok, který se **automaticky spustí** před (`BEFORE`) nebo po (`AFTER`) provedení události `INSERT`, `UPDATE` nebo `DELETE` nad konkrétní tabulkou.
 
@@ -621,7 +621,7 @@ DROP TRIGGER IF EXISTS `before_update_pobocky`;
 
 ---
 
-## 21. Uložené procedury a funkce [↩ Zpět na obsah](#-obsah)
+## 21. Uložené procedury a funkce
 
 * **Procedura** je pojmenovaný blok příkazů uložený na serveru. Volá se explicitně pomocí příkazu `CALL`. Může mít parametry typu `IN` (vstupní), `OUT` (výstupní) a `INOUT` (vstupně-výstupní).
 * **Funkce** je podobná proceduře, ale **vždy vrací právě jednu hodnotu** (`RETURNS`) a lze ji volat přímo uvnitř standardních SQL dotazů (např. v `SELECT` nebo `WHERE`).
@@ -716,7 +716,7 @@ SHOW FUNCTION STATUS;
 
 ---
 
-## 22. Cizí klíče (FOREIGN KEY) [↩ Zpět na obsah](#-obsah)
+## 22. Cizí klíče (FOREIGN KEY)
 
 Propojuje sloupec v podřízené (závislé) tabulce s primárním klíčem nadřízené tabulky. Zajišťuje **referenční integritu** dat.
 * ⚠️ Vyžaduje úložný systém **InnoDB**.
@@ -774,7 +774,7 @@ SET FOREIGN_KEY_CHECKS = 1;
 
 ---
 
-## 23. Uživatelé a oprávnění [↩ Zpět na obsah](#-obsah)
+## 23. Uživatelé a oprávnění
 
 ```sql
 -- Vytvoření nového uživatele (pokud neexistuje)
@@ -793,7 +793,7 @@ SELECT `user`, `host` FROM `mysql`.`user`;
 DROP USER IF EXISTS `novak`@`localhost`;
 ```
 
-### 🔐 Přehled základních oprávnění:  [↩ Zpět na obsah](#-obsah)
+### 🔐 Přehled základních oprávnění:
 * `ALL PRIVILEGES` – udělí veškerá práva (včetně spouštění rutin).
 * `SELECT` – právo na čtení a výběr dat.
 * `INSERT` – právo na vkládání nových záznamů.
@@ -809,31 +809,31 @@ DROP USER IF EXISTS `novak`@`localhost`;
 
 ---
 
-## ⚡ Rychlý přehled příkazů – Cheat Sheet [↩ Zpět na obsah](#-obsah)
+## ⚡ Rychlý přehled příkazů – Cheat Sheet
 
-```sql
-# DATABÁZE
+```txt
+DATABÁZE
   CREATE DATABASE db CHARSET utf8 COLLATE utf8_czech_ci;
   DROP DATABASE db;
 
-# TABULKY
+TABULKY
   CREATE TABLE t (...);  DROP TABLE t;
   ALTER TABLE t ADD COLUMN c INT;
   ALTER TABLE t MODIFY COLUMN c BIGINT;
   ALTER TABLE t DROP COLUMN c;
 
-# DATA
+DATA
   INSERT INTO t (sl1,sl2) VALUES (v1,v2),(v3,v4);
   UPDATE t SET sl1=v1 WHERE podmínka;
   DELETE FROM t WHERE podmínka;
   TRUNCATE TABLE t;
 
-# VÝBĚR
+VÝBĚR
   SELECT sl FROM t WHERE p ORDER BY sl LIMIT n;
   GROUP BY sl HAVING agregace > hodnota
   JOIN t2 ON t.id = t2.fk
 
-# POKROČILÉ
+POKROČILÉ
   CREATE VIEW v AS SELECT ...;
   CREATE TRIGGER tr AFTER INSERT ON t FOR EACH ROW BEGIN..
   CREATE PROCEDURE p(IN x INT) BEGIN ... END;
