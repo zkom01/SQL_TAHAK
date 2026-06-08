@@ -416,7 +416,7 @@ WITH faktury_srpen AS (
       AND `i`.`created`  < '2015-09-01'
 )
 SELECT `item_id`, `title`, `price` FROM `faktury_srpen`
-UNION ALL
+UNION ALL -- spojení tabulek pod sebe (musí mít stejný počet sloupců)
 SELECT NULL, 'SOUČET', SUM(`price`) FROM `faktury_srpen`;
 
 
