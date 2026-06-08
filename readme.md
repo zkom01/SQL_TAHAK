@@ -93,7 +93,8 @@ DROP TABLE `uzivatele`;
 
 ---
 
-## 3. Modifikátory sloupců [↩ Zpět na obsah](#-obsah)
+## 3. Modifikátory sloupců 
+[↩ Zpět na obsah](#-obsah)
 
 * **`NOT NULL`** – hodnota nesmí být NULL.
 * **`NULL`** – hodnota může být NULL (výchozí chování).
