@@ -1,4 +1,4 @@
-# 📊 MySQL Tahák & Učební pomůcka
+# 📊 MySQL Řešené úkoly & Tahák & Učební pomůcka
 
 Komplexní přehled syntaxe, datových typů, operací a pokročilých funkcí v MySQL. Tento dokument slouží jako rychlá referenční příručka (Cheat Sheet) pro každodenní práci s databázemi.
 
